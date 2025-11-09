@@ -41,6 +41,9 @@ add_executable(${PROJECT_NAME}
     src/utils/sceneparser.h
     src/utils/shaderloader.h
     src/utils/aspectratiowidget/aspectratiowidget.hpp
+    src/shapes/Cone.cpp src/shapes/Cone.h src/shapes/Cube.cpp src/shapes/Cube.h src/shapes/Cylinder.cpp src/shapes/Cylinder.h src/shapes/Sphere.cpp src/shapes/Sphere.h
+    src/camera.h src/camera.cpp
+
 )
 
 # GLM: this creates its library and allows you to `#include "glm/..."`

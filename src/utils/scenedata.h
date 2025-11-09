@@ -29,6 +29,7 @@ enum class TransformationType {
     TRANSFORMATION_MATRIX
 };
 
+
 // Type which can be used to store an RGBA color in floats [0,1]
 using SceneColor = glm::vec4;
 
