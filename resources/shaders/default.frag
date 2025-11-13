@@ -15,6 +15,15 @@ uniform float ka;
 uniform float kd;
 uniform vec4 lightPos;
 
+uniform vec3 lightColors[8];
+uniform int lightsNum;
+uniform int lightTypes[8];
+uniform vec3 lightFunctions[8];
+uniform vec4 lightPositions[8];
+uniform vec4 lightDirections[8];
+uniform float lightAngles[8];
+uniform float lightPenumbras[8];
+
 // Task 14: declare relevant uniform(s) here, for specular lighting
 uniform float ks;
 uniform vec4 camPos;

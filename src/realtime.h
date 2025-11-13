@@ -38,6 +38,7 @@ public:
     void declSpecificUniforms(RenderShapeData& shape);
     void rebuildMatrices();
     void setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles);
+    glm::mat4 rotationhelper(glm::vec4 u, float angle);
 
 public slots:
     void tick(QTimerEvent* event);                      // Called once per tick of m_timer

@@ -166,19 +166,19 @@ void Realtime::paintGL() {
         // glBindVertexArray(m_vao);
         switch (shape.primitive.type) {
         case PrimitiveType::PRIMITIVE_CONE:
-            vertices = m_cone->num_triangles * 3;
+            vertices = m_cone->num_triangles;
             glBindVertexArray(m_coneIds->shape_vao);
             break;
         case PrimitiveType::PRIMITIVE_CUBE:
-            vertices = m_cube->num_triangles * 3;
+            vertices = m_cube->num_triangles;
             glBindVertexArray(m_cubeIds->shape_vao);
             break;
         case PrimitiveType::PRIMITIVE_CYLINDER:
-            vertices = m_cylinder->num_triangles * 3;
+            vertices = m_cylinder->num_triangles;
             glBindVertexArray(m_cylinderIds->shape_vao);
             break;
         case PrimitiveType::PRIMITIVE_SPHERE:
-            vertices = m_sphere->num_triangles * 3;
+            vertices = m_sphere->num_triangles;
             glBindVertexArray(m_sphereIds->shape_vao);
             break;
         default:
@@ -225,6 +225,74 @@ void Realtime::declGeneralUniforms() { // how often do i do this - every vao/vbo
     // -------------------
 
     // --- LIGHT DATA ---
+    // change to add all the light data
+    /*
+     *     LightType type;
+
+    SceneColor color;
+    glm::vec3 function; // Attenuation function
+    glm::vec4 dir;      // Not applicable to point lights
+
+    float penumbra; // Only applicable to spot lights, in RADIANS
+    float angle;    // Only applicable to spot lights, in RADIANS
+
+    uniform vec3 lightColors[8];
+    uniform int lightTypes[8];
+    uniform vec3 lightFunctions[8];
+    uniform vec4 lightPositions[8];
+    uniform vec4 lightDirections[8];
+    uniform float lightAngles[8];
+    uniform float lightPenumbras[8];
+
+GLint loc = glGetUniformLocation(shaderHandle, "myVectors[" + std::to_string(j) + "]");
+glUniform3f(loc, x, y, z);
+
+     */
+    std::vector<GLfloat> lightColors(8*3); // scenecolor is 0 to 1 i think
+    std::vector<GLfloat> lightFunctions(8*3);
+    GLfloat lightPenumbras[8];
+    GLfloat lightAngles[8];
+    GLint lightTypes[8];
+    std::vector<GLfloat> lightPositions(8*4);
+    std::vector<GLfloat> lightDirections(8*4);
+    // GLint loc_type;
+    // const GLchar* tempType;
+    for (int i = 0; i < m_renderdata.lights.size(); i++) {
+        // tempType = ("lightTypes[" + std::to_string(i) + "]").c_str();
+        for (int j = 0; j < 3; j++) lightColors.push_back(m_renderdata.lights[i].color[j]);
+        switch (m_renderdata.lights[i].type) {
+        case LightType::LIGHT_DIRECTIONAL:
+            lightTypes[i] = 1;
+            for (int j = 0; j < 4; j++) lightDirections.push_back(m_renderdata.lights[i].dir[j]);
+            break;
+        case LightType::LIGHT_POINT:
+            lightTypes[i] = 0;
+            for (int j = 0; j < 3; j++) lightFunctions.push_back(m_renderdata.lights[i].function[j]);
+            for (int j = 0; j < 4; j++) lightPositions.push_back(m_renderdata.lights[i].pos[j]);
+
+            break;
+        case LightType::LIGHT_SPOT:
+            lightTypes[i] = 2;
+            lightAngles[i] = m_renderdata.lights[i].angle;
+            lightPenumbras[i] = m_renderdata.lights[i].penumbra;
+            for (int j = 0; j < 3; j++) lightFunctions.push_back(m_renderdata.lights[i].function[j]);
+            for (int j = 0; j < 4; j++) lightDirections.push_back(m_renderdata.lights[i].dir[j]);
+            for (int j = 0; j < 4; j++) lightPositions.push_back(m_renderdata.lights[i].pos[j]);
+
+            break;
+        default:
+            break;
+        }
+    }
+    glUniform1i(glGetUniformLocation(m_shader, "lightsNum"), m_renderdata.lights.size());
+    glUniform1iv(glGetUniformLocation(m_shader, "lightTypes"), 8, lightTypes);
+    glUniform1fv(glGetUniformLocation(m_shader, "lightPenumbras"), 8, lightPenumbras);
+    glUniform1fv(glGetUniformLocation(m_shader, "lightAngles"), 8, lightAngles);
+    glUniform3fv(glGetUniformLocation(m_shader, "lightColors"), 8, lightColors.data());
+    glUniform3fv(glGetUniformLocation(m_shader, "lightFunctions"), 8, lightFunctions.data());
+    glUniform4fv(glGetUniformLocation(m_shader, "lightPositions"), 8, lightPositions.data());
+    glUniform4fv(glGetUniformLocation(m_shader, "lightDirections"), 8, lightDirections.data());
+
     glm::vec4 m_lightPos = glm::vec4(3, 3, 3, 1);
     GLint loc_light_pos = glGetUniformLocation(m_shader, "lightPos");
     glUniform4fv(loc_light_pos, 1, &m_lightPos[0]); // light specific
@@ -305,6 +373,15 @@ void Realtime::mouseReleaseEvent(QMouseEvent *event) {
     }
 }
 
+glm::mat4 Realtime::rotationhelper(glm::vec4 u, float angle) {
+    return glm::mat4(
+        (cos(angle) + u.x*u.x*(1-cos(angle))), (u.x*u.y*(1-cos(angle))+u.z*sin(angle)), (u.x*u.z*(1-cos(angle))-u.y*sin(angle)), 0,
+        (u.x*u.y*(1-cos(angle))-u.z*sin(angle)), (cos(angle) + u.y*u.y*(1-cos(angle))), (u.z*u.y*(1-cos(angle))+u.x*sin(angle)), 0,
+        (u.x*u.z*(1-cos(angle))+u.y*sin(angle)), (u.z*u.y*(1-cos(angle))-u.x*sin(angle)), (cos(angle) + u.z*u.z*(1-cos(angle))), 0,
+        0, 0, 0, 1
+        );
+}
+
 void Realtime::mouseMoveEvent(QMouseEvent *event) {
     if (m_mouseDown) {
         int posX = event->position().x();
@@ -313,18 +390,106 @@ void Realtime::mouseMoveEvent(QMouseEvent *event) {
         int deltaY = posY - m_prev_mouse_pos.y;
         m_prev_mouse_pos = glm::vec2(posX, posY);
 
+
+        bool updated = false;
+        float pointing;
+        glm::mat4 rotation = glm::mat4(1);
         // Use deltaX and deltaY here to rotate
+        if (deltaX != 0) {
+            pointing = ((deltaX > 0) ? 1.f : -1.f);
+
+            std::cout << pointing << std::endl;
+            glm::vec4 moveX = m_cam.view * glm::vec4(0, 1, 0, 0);
+            updated = true;
+            rotation = rotationhelper(moveX, (deltaX/(float)size().width())*(M_PI/2.)) * rotation;
+            // m_cam.look = rotation * m_cam.look;
+            // rotate look and up or wtv
+        }
+        if (deltaY != 0) {
+            pointing = ((deltaY > 0) ? 1.f : -1.f);
+            glm::vec4 moveY = glm::vec4(glm::cross(glm::vec3(m_cam.look), glm::vec3(m_cam.up)), 0); // axis for y distance travelled
+            rotation = rotationhelper(moveY, (deltaY/(float)size().height())*(M_PI/4.)) * rotation;
+
+            updated = true;
+        }
+
+        if (updated) {
+            m_cam.look = rotation * m_cam.look;
+            // m_cam.up = rotation * m_cam.up; // only do this for roty maybe?
+            glm::vec3 w = -glm::normalize(glm::vec3(m_cam.look));
+            glm::vec3 v = glm::normalize(glm::vec3(m_cam.up) - (glm::dot(glm::vec3(m_cam.up), w) * w));
+            glm::vec3 u = glm::cross(v, w);
+
+            glm::mat4 rot = glm::mat4(u.x, v.x, w.x, 0, u.y, v.y, w.y, 0, u.z, v.z, w.z, 0, 0, 0, 0, 1);
+            glm::mat4 trans = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -m_cam.pos.x, -m_cam.pos.y, -m_cam.pos.z, 1);
+            m_cam.view = rot * trans;
+            m_cam.viewInv = glm::inverse(m_cam.view);
+        }
 
         update(); // asks for a PaintGL() call to occur
     }
 }
 
 void Realtime::timerEvent(QTimerEvent *event) {
+    /*
+        W: Translates the camera in the direction of the look vector
+        S: Translates the camera in the opposite direction of the look vector
+        A: Translates the camera in the left direction, perpendicular to the look and up vectors
+        D: Translates the camera in the right direction, also perpendicular to the look and up vectors. This movement should be opposite to that of pressing A
+        Space: Translates the camera along the world space vector 0,1,0
+        Ctrl: Translates the camera along the world space vector 0,-1,0
+
+        m_cam = Camera{viewMatrix, viewInv, glm::vec4{pos.x, pos.y, pos.z, 1}, m_renderdata.cameraData.look, m_renderdata.cameraData.up,
+                     m_renderdata.cameraData.heightAngle, m_renderdata.cameraData.aperture, m_renderdata.cameraData.focalLength};
+
+        m_keyMap comes equipped to handle the keys: Qt::Key_W, Qt::Key_A, Qt::Key_S, Qt::Key_D, Qt::Key_Space, and Qt::Key_Control.
+    */
     int elapsedms   = m_elapsedTimer.elapsed();
     float deltaTime = elapsedms * 0.001f;
     m_elapsedTimer.restart();
 
+    bool updatedoccurred = false;
     // Use deltaTime and m_keyMap here to move around
+    if (m_keyMap[Qt::Key_W]) {
+        m_cam.pos += (5 * deltaTime * m_cam.look);
+        updatedoccurred = true;
+    } else if (m_keyMap[Qt::Key_S]) {
+        m_cam.pos -= (5 * deltaTime * m_cam.look);
+        updatedoccurred = true;
+    }
+
+    if (m_keyMap[Qt::Key_A]) {
+        glm::vec4 move = glm::vec4(glm::cross(glm::vec3(m_cam.look), glm::vec3(m_cam.up)), 0);
+        m_cam.pos -= (5 * deltaTime * move);
+        updatedoccurred = true;
+    } else if (m_keyMap[Qt::Key_D]) {
+        glm::vec4 move = glm::vec4(glm::cross(glm::vec3(m_cam.look), glm::vec3(m_cam.up)), 0);
+        m_cam.pos += (5 * deltaTime * move);
+        updatedoccurred = true;
+    }
+
+    if (m_keyMap[Qt::Key_Space]) {
+        glm::vec4 translate = m_cam.view * glm::vec4(0, 1, 0, 0);
+        m_cam.pos += (5 * deltaTime * translate);
+        updatedoccurred = true;
+    } else if (m_keyMap[Qt::Key_Control]) {
+        glm::vec4 translate = m_cam.view * glm::vec4(0, 1, 0, 0);
+        m_cam.pos -= (5 * deltaTime * translate);
+        updatedoccurred = true;
+    }
+
+
+    if (updatedoccurred) {
+        glm::vec3 w = -glm::normalize(glm::vec3(m_cam.look));
+        glm::vec3 v = glm::normalize(glm::vec3(m_cam.up) - (glm::dot(glm::vec3(m_cam.up), w) * w));
+        glm::vec3 u = glm::cross(v, w);
+
+        glm::mat4 rot = glm::mat4(u.x, v.x, w.x, 0, u.y, v.y, w.y, 0, u.z, v.z, w.z, 0, 0, 0, 0, 1);
+        glm::mat4 trans = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -m_cam.pos.x, -m_cam.pos.y, -m_cam.pos.z, 1);
+        m_cam.view = rot * trans;
+        m_cam.viewInv = glm::inverse(m_cam.view);
+    }
+
 
     update(); // asks for a PaintGL() call to occur
 }

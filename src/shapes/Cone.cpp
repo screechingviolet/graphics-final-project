@@ -74,7 +74,7 @@ void Cone::makeSlopeTile(glm::vec3 topLeft,
     insertVec3(m_vertexData, bottomLeft);
     insertVec3(m_vertexData, calcNorm(bottomLeft));
     insertVec3(m_vertexData, bottomRight);
-    insertVec3(m_vertexData, calcNorm(bottomLeft));
+    insertVec3(m_vertexData, calcNorm(bottomRight));
 
     insertVec3(m_vertexData, topLeft);
     insertVec3(m_vertexData, calcNorm(topLeft));
