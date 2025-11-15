@@ -77,8 +77,16 @@ Paste your output on top of this comment!
 
 ### Design Choices
 
+I chose to keep the structure for the shapes from the tesselation lab. I also abstracted the declaration of uniforms and regeneration of matrices into different helper functions. I stored one VAO and one VBO for each type of primitive in a VboVao struct for each and passed the relevant CTM matrix to the vertex shader. 
+
 ### Collaboration/References
+
+N/A
 
 ### Known Bugs
 
+N/A
+
 ### Extra Credit
+
+N/A

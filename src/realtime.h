@@ -36,7 +36,9 @@ public:
     void saveViewportImage(std::string filePath);
     void declGeneralUniforms();
     void declSpecificUniforms(RenderShapeData& shape);
+    void declareCameraUniforms();
     void rebuildMatrices();
+    void rebuildCamera();
     void setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles);
     glm::mat4 rotationhelper(glm::vec4 u, float angle);
 
@@ -68,7 +70,7 @@ private:
     // Device Correction Variables
     double m_devicePixelRatio;
 
-    GLuint m_shader; // Stores id of shader program
+    GLuint m_shader = 0; // Stores id of shader program
     RenderData m_renderdata;
     // GLuint m_vbo;    // Stores id of VBO
     // GLuint m_vao;    // Stores id of VAO

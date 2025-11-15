@@ -21,6 +21,7 @@ bool SceneParser::parse(std::string filepath, RenderData &renderData) {
     //         create a helper function to do so!
 
     renderData.shapes.clear();
+    renderData.lights.clear();
     SceneNode* root = fileReader.getRootNode();
 
     parseRecursive(renderData, root, glm::mat4{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1});
@@ -46,7 +47,7 @@ void SceneParser::parseRecursive(RenderData &renderData, SceneNode* node, glm::m
     }
 
     for (ScenePrimitive* prim: node->primitives) {
-        renderData.shapes.push_back(RenderShapeData{*prim, newctm});
+        renderData.shapes.push_back(RenderShapeData{*prim, newctm, glm::inverse(glm::transpose(newctm))});
     }
 
     for (SceneLight* lit: node->lights) {

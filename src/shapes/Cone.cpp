@@ -1,9 +1,9 @@
 #include "Cone.h"
 
 void Cone::updateParams(int param1, int param2) {
-    m_vertexData = std::vector<float>();
-    m_param1 = param1;
-    m_param2 = param2;
+    m_vertexData.clear(); // std::vector<float>();
+    m_param1 = std::max(1, param1);
+    m_param2 = std::max(3, param2);
     setVertexData();
 }
 
@@ -47,11 +47,13 @@ void Cone::makeCapSlice(float currentTheta, float nextTheta) {
     insertVec3(m_vertexData, firstTopLeft);
     insertVec3(m_vertexData, normal);
 
-    for (float rad = step; rad < m_radius; rad += step) {
+    float rad = step;
+    for (int i = 0; i < m_param1-1; i++) { // float rad = step; rad < m_radius; rad += step
         makeCapTile(glm::vec3((rad)*glm::cos(currentTheta), -m_radius, (rad)*glm::sin(currentTheta)),
                     glm::vec3((rad)*glm::cos(nextTheta), -m_radius, (rad)*glm::sin(nextTheta)),
                     glm::vec3((rad+step)*glm::cos(currentTheta), -m_radius, (rad+step)*glm::sin(currentTheta)),
                     glm::vec3((rad+step)*glm::cos(nextTheta), -m_radius, (rad+step)*glm::sin(nextTheta)));
+        rad += step;
 
     }
 

@@ -33,6 +33,24 @@ void Realtime::finish() {
 
     // Students: anything requiring OpenGL calls when the program exits should be done here
 
+    glDeleteBuffers(1, &m_sphereIds->shape_vbo);
+    glDeleteBuffers(1, &m_cubeIds->shape_vbo);
+    glDeleteBuffers(1, &m_coneIds->shape_vbo);
+    glDeleteBuffers(1, &m_cylinderIds->shape_vbo);
+    glDeleteVertexArrays(1, &m_sphereIds->shape_vao);
+    glDeleteVertexArrays(1, &m_cubeIds->shape_vao);
+    glDeleteVertexArrays(1, &m_coneIds->shape_vao);
+    glDeleteVertexArrays(1, &m_cylinderIds->shape_vao);
+
+    delete m_sphere;
+    delete m_cube;
+    delete m_cylinder;
+    delete m_cone;
+    delete m_sphereIds;
+    delete m_cubeIds;
+    delete m_cylinderIds;
+    delete m_coneIds;
+
     this->doneCurrent();
 }
 
@@ -62,46 +80,12 @@ void Realtime::initializeGL() {
 
     // Students: anything requiring OpenGL calls when the program starts should be done here
 
-    // set camera view and proj matrices
-
-    // construct vbos and vaos for every shape?? then use ctm for transforming later
-
     // Task 4: Set the clear color here
     glClearColor(0, 0, 0, 1.0);
 
     // Shader setup (DO NOT EDIT)
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
 
-    // ================== Vertex Buffer Objects
-
-    // glGenBuffers(1, &m_vbo);
-    // glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-
-    // Sphere s;
-    // s.updateParams(10, 10);
-
-    // std::vector<GLfloat> triangle = s.generateShape();
-
-    // // Task 9: Pass the triangle vector into your VBO here
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * triangle.size(), triangle.data(), GL_STATIC_DRAW);
-
-    // // ================== Vertex Array Objects
-
-    // // Task 11: Generate a VAO here and store it in m_vao
-    // glGenVertexArrays(1, &m_vao);
-    // glBindVertexArray(m_vao);
-
-    // // Task 13: Add position and normal attributes to your VAO here
-    // glEnableVertexAttribArray(0);
-    // glEnableVertexAttribArray(1);
-    // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void*>(0));
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void*>(3 * sizeof(GLfloat)));
-
-    // // ================== Returning to Default State
-
-    // // Task 14: Unbind your VBO and VAO here
-    // glBindBuffer(GL_ARRAY_BUFFER, 0);
-    // glBindVertexArray(0);
 
     glGenBuffers(1, &m_sphereIds->shape_vbo);
     glGenVertexArrays(1, &m_sphereIds->shape_vao);
@@ -156,7 +140,7 @@ void Realtime::paintGL() {
     glUseProgram(m_shader);
 
     // decl global uniforms and for all 8 lights
-    declGeneralUniforms(); // change the uniforms in between draws
+    // declGeneralUniforms(); // change the uniforms in between draws // can i make this more efficient?
 
     GLuint vertices;
     // for each shape: bind vao, decl shape uniforms, draw, unbind, repeat
@@ -195,13 +179,11 @@ void Realtime::paintGL() {
         glBindVertexArray(0);
     }
 
-
-
     // Unbind the shader
     glUseProgram(0);
 }
 
-void Realtime::declGeneralUniforms() { // how often do i do this - every vao/vbo drawn
+void Realtime::declareCameraUniforms() {
     // --- CAMERA DATA ---
     GLint loc_view = glGetUniformLocation(m_shader, "view");
     glUniformMatrix4fv(loc_view, 1, GL_FALSE, &m_cam.view[0][0]); // general
@@ -212,7 +194,9 @@ void Realtime::declGeneralUniforms() { // how often do i do this - every vao/vbo
     GLint loc_cam_pos = glGetUniformLocation(m_shader, "camPos");
     glUniform4fv(loc_cam_pos, 1, &m_cam.pos[0]); // general
     // -------------------
+}
 
+void Realtime::declGeneralUniforms() { // how often do i do this - every vao/vbo drawn
     // --- GLOBAL DATA ---
     GLint loc_ka = glGetUniformLocation(m_shader, "ka");
     glUniform1f(loc_ka, m_renderdata.globalData.ka);
@@ -225,78 +209,46 @@ void Realtime::declGeneralUniforms() { // how often do i do this - every vao/vbo
     // -------------------
 
     // --- LIGHT DATA ---
-    // change to add all the light data
-    /*
-     *     LightType type;
-
-    SceneColor color;
-    glm::vec3 function; // Attenuation function
-    glm::vec4 dir;      // Not applicable to point lights
-
-    float penumbra; // Only applicable to spot lights, in RADIANS
-    float angle;    // Only applicable to spot lights, in RADIANS
-
-    uniform vec3 lightColors[8];
-    uniform int lightTypes[8];
-    uniform vec3 lightFunctions[8];
-    uniform vec4 lightPositions[8];
-    uniform vec4 lightDirections[8];
-    uniform float lightAngles[8];
-    uniform float lightPenumbras[8];
-
-GLint loc = glGetUniformLocation(shaderHandle, "myVectors[" + std::to_string(j) + "]");
-glUniform3f(loc, x, y, z);
-
-     */
-    std::vector<GLfloat> lightColors(8*3); // scenecolor is 0 to 1 i think
-    std::vector<GLfloat> lightFunctions(8*3);
+    GLfloat lightColors[8*3]; // scenecolor is 0 to 1 i think
+    GLfloat lightFunctions[8*3];
     GLfloat lightPenumbras[8];
     GLfloat lightAngles[8];
     GLint lightTypes[8];
-    std::vector<GLfloat> lightPositions(8*4);
-    std::vector<GLfloat> lightDirections(8*4);
-    // GLint loc_type;
-    // const GLchar* tempType;
+    GLfloat lightPositions[8*4];
+    GLfloat lightDirections[8*4];
     for (int i = 0; i < m_renderdata.lights.size(); i++) {
-        // tempType = ("lightTypes[" + std::to_string(i) + "]").c_str();
-        for (int j = 0; j < 3; j++) lightColors.push_back(m_renderdata.lights[i].color[j]);
+        for (int j = 0; j < 3; j++) lightColors[i*3+j] = m_renderdata.lights[i].color[j];
         switch (m_renderdata.lights[i].type) {
         case LightType::LIGHT_DIRECTIONAL:
             lightTypes[i] = 1;
-            for (int j = 0; j < 4; j++) lightDirections.push_back(m_renderdata.lights[i].dir[j]);
+            for (int j = 0; j < 4; j++) lightDirections[i*4+j] = m_renderdata.lights[i].dir[j];
             break;
         case LightType::LIGHT_POINT:
             lightTypes[i] = 0;
-            for (int j = 0; j < 3; j++) lightFunctions.push_back(m_renderdata.lights[i].function[j]);
-            for (int j = 0; j < 4; j++) lightPositions.push_back(m_renderdata.lights[i].pos[j]);
-
+            for (int j = 0; j < 3; j++) lightFunctions[i*3+j] = m_renderdata.lights[i].function[j];
+            for (int j = 0; j < 4; j++) lightPositions[i*4+j] = m_renderdata.lights[i].pos[j];
             break;
         case LightType::LIGHT_SPOT:
             lightTypes[i] = 2;
             lightAngles[i] = m_renderdata.lights[i].angle;
             lightPenumbras[i] = m_renderdata.lights[i].penumbra;
-            for (int j = 0; j < 3; j++) lightFunctions.push_back(m_renderdata.lights[i].function[j]);
-            for (int j = 0; j < 4; j++) lightDirections.push_back(m_renderdata.lights[i].dir[j]);
-            for (int j = 0; j < 4; j++) lightPositions.push_back(m_renderdata.lights[i].pos[j]);
-
+            for (int j = 0; j < 3; j++) lightFunctions[i*3+j] = m_renderdata.lights[i].function[j];
+            for (int j = 0; j < 4; j++) lightDirections[i*4+j] = m_renderdata.lights[i].dir[j];
+            for (int j = 0; j < 4; j++) lightPositions[i*4+j] = m_renderdata.lights[i].pos[j];
             break;
         default:
             break;
         }
     }
     glUniform1i(glGetUniformLocation(m_shader, "lightsNum"), m_renderdata.lights.size());
+    glUniform3fv(glGetUniformLocation(m_shader, "lightColors"), 8, lightColors);
     glUniform1iv(glGetUniformLocation(m_shader, "lightTypes"), 8, lightTypes);
     glUniform1fv(glGetUniformLocation(m_shader, "lightPenumbras"), 8, lightPenumbras);
     glUniform1fv(glGetUniformLocation(m_shader, "lightAngles"), 8, lightAngles);
-    glUniform3fv(glGetUniformLocation(m_shader, "lightColors"), 8, lightColors.data());
-    glUniform3fv(glGetUniformLocation(m_shader, "lightFunctions"), 8, lightFunctions.data());
-    glUniform4fv(glGetUniformLocation(m_shader, "lightPositions"), 8, lightPositions.data());
-    glUniform4fv(glGetUniformLocation(m_shader, "lightDirections"), 8, lightDirections.data());
+    glUniform3fv(glGetUniformLocation(m_shader, "lightFunctions"), 8, lightFunctions);
+    glUniform4fv(glGetUniformLocation(m_shader, "lightPositions"), 8, lightPositions);
+    glUniform4fv(glGetUniformLocation(m_shader, "lightDirections"), 8, lightDirections);
 
-    glm::vec4 m_lightPos = glm::vec4(3, 3, 3, 1);
-    GLint loc_light_pos = glGetUniformLocation(m_shader, "lightPos");
-    glUniform4fv(loc_light_pos, 1, &m_lightPos[0]); // light specific
-    // ------------------
 }
 
 void Realtime::declSpecificUniforms(RenderShapeData& shape) { // is it bad to pass a whole matrix
@@ -306,7 +258,15 @@ void Realtime::declSpecificUniforms(RenderShapeData& shape) { // is it bad to pa
 
     GLint loc_model = glGetUniformLocation(m_shader, "model");
     glUniformMatrix4fv(loc_model, 1, GL_FALSE, &shape.ctm[0][0]); // shape ctm
-    // ------------------
+
+    glUniformMatrix4fv(glGetUniformLocation(m_shader, "model_inv_trans"), 1, GL_FALSE, &shape.ctm_inv_trans[0][0]);
+
+    GLfloat shapeColorA[3] = {shape.primitive.material.cAmbient[0], shape.primitive.material.cAmbient[1], shape.primitive.material.cAmbient[2]};
+    GLfloat shapeColorD[3] = {shape.primitive.material.cDiffuse[0], shape.primitive.material.cDiffuse[1], shape.primitive.material.cDiffuse[2]};
+    GLfloat shapeColorS[3] = {shape.primitive.material.cSpecular[0], shape.primitive.material.cSpecular[1], shape.primitive.material.cSpecular[2]};
+    glUniform3fv(glGetUniformLocation(m_shader, "shapeColorA"), 1, shapeColorA);
+    glUniform3fv(glGetUniformLocation(m_shader, "shapeColorD"), 1, shapeColorD);
+    glUniform3fv(glGetUniformLocation(m_shader, "shapeColorS"), 1, shapeColorS);
 }
 
 void Realtime::resizeGL(int w, int h) {
@@ -319,7 +279,13 @@ void Realtime::resizeGL(int w, int h) {
 void Realtime::sceneChanged() {
     makeCurrent();
     SceneParser::parse(settings.sceneFilePath, m_renderdata);
+    rebuildCamera();
     rebuildMatrices();
+
+    glUseProgram(m_shader);
+    declareCameraUniforms();
+    declGeneralUniforms();
+    glUseProgram(0);
     update(); // asks for a PaintGL() call to occur
 }
 
@@ -345,7 +311,12 @@ void Realtime::settingsChanged() {
         setupPrimitives(m_cylinderIds, m_cylinder->generateShape());
     }
 
-    rebuildMatrices();
+    if (m_shader != 0 && (settings.nearPlane != near || settings.farPlane != far)) {
+        rebuildMatrices();
+        glUseProgram(m_shader);
+        declareCameraUniforms(); // do i need to anymore
+        glUseProgram(0);
+    }
     update(); // asks for a PaintGL() call to occur
     // if nearPlane or farPlane changed update camera settings
 }
@@ -388,42 +359,64 @@ void Realtime::mouseMoveEvent(QMouseEvent *event) {
         int posY = event->position().y();
         int deltaX = posX - m_prev_mouse_pos.x;
         int deltaY = posY - m_prev_mouse_pos.y;
+
         m_prev_mouse_pos = glm::vec2(posX, posY);
 
 
         bool updated = false;
         float pointing;
-        glm::mat4 rotation = glm::mat4(1);
+        glm::mat4 rotation = glm::mat4(1), rot, trans;
+        glm::vec3 w, v, u;
         // Use deltaX and deltaY here to rotate
         if (deltaX != 0) {
-            pointing = ((deltaX > 0) ? 1.f : -1.f);
-
-            std::cout << pointing << std::endl;
-            glm::vec4 moveX = m_cam.view * glm::vec4(0, 1, 0, 0);
+            glm::vec4 moveX = glm::vec4(0, 1, 0, 0);
             updated = true;
-            rotation = rotationhelper(moveX, (deltaX/(float)size().width())*(M_PI/2.)) * rotation;
+            rotation = rotationhelper(moveX, (deltaX)*(M_PI/1024.f)); // /(float)size().width()
+            m_cam.look = rotation * m_cam.look;
+            m_cam.up = rotation * m_cam.up;
             // m_cam.look = rotation * m_cam.look;
             // rotate look and up or wtv
-        }
-        if (deltaY != 0) {
-            pointing = ((deltaY > 0) ? 1.f : -1.f);
-            glm::vec4 moveY = glm::vec4(glm::cross(glm::vec3(m_cam.look), glm::vec3(m_cam.up)), 0); // axis for y distance travelled
-            rotation = rotationhelper(moveY, (deltaY/(float)size().height())*(M_PI/4.)) * rotation;
 
-            updated = true;
-        }
-
-        if (updated) {
-            m_cam.look = rotation * m_cam.look;
-            // m_cam.up = rotation * m_cam.up; // only do this for roty maybe?
-            glm::vec3 w = -glm::normalize(glm::vec3(m_cam.look));
-            glm::vec3 v = glm::normalize(glm::vec3(m_cam.up) - (glm::dot(glm::vec3(m_cam.up), w) * w));
-            glm::vec3 u = glm::cross(v, w);
-
-            glm::mat4 rot = glm::mat4(u.x, v.x, w.x, 0, u.y, v.y, w.y, 0, u.z, v.z, w.z, 0, 0, 0, 0, 1);
-            glm::mat4 trans = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -m_cam.pos.x, -m_cam.pos.y, -m_cam.pos.z, 1);
+            w = -glm::normalize(glm::vec3(m_cam.look));
+            v = glm::normalize(glm::vec3(m_cam.up) - (glm::dot(glm::vec3(m_cam.up), w) * w));
+            u = glm::cross(v, w);
+            rot = glm::mat4(u.x, v.x, w.x, 0, u.y, v.y, w.y, 0, u.z, v.z, w.z, 0, 0, 0, 0, 1);
+            trans = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -m_cam.pos.x, -m_cam.pos.y, -m_cam.pos.z, 1);
             m_cam.view = rot * trans;
             m_cam.viewInv = glm::inverse(m_cam.view);
+        }
+        if (deltaY != 0) {
+            glm::vec4 moveY = glm::normalize(glm::vec4(glm::cross(glm::vec3(m_cam.view * m_cam.look), glm::vec3(m_cam.view * m_cam.up)), 0)); // axis for y distance travelled
+            rotation = rotationhelper(moveY, (deltaY)*(M_PI/1024.f)); // /(float)size().height()
+            m_cam.look = m_cam.viewInv * rotation * m_cam.view * m_cam.look;
+            m_cam.up = m_cam.viewInv * rotation * m_cam.view * m_cam.up;
+            updated = true;
+
+            w = -glm::normalize(glm::vec3(m_cam.look));
+            v = glm::normalize(glm::vec3(m_cam.up) - (glm::dot(glm::vec3(m_cam.up), w) * w));
+            u = glm::cross(v, w);
+            rot = glm::mat4(u.x, v.x, w.x, 0, u.y, v.y, w.y, 0, u.z, v.z, w.z, 0, 0, 0, 0, 1);
+            trans = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -m_cam.pos.x, -m_cam.pos.y, -m_cam.pos.z, 1);
+            m_cam.view = rot * trans;
+            m_cam.viewInv = glm::inverse(m_cam.view);
+        }
+
+
+        if (updated) {
+            // m_cam.look = rotation * m_cam.look;
+            // m_cam.up = rotation * m_cam.up; // only do this for roty maybe?
+            // glm::vec3 w = -glm::normalize(glm::vec3(m_cam.look));
+            // glm::vec3 v = glm::normalize(glm::vec3(m_cam.up) - (glm::dot(glm::vec3(m_cam.up), w) * w));
+            // glm::vec3 u = glm::cross(v, w);
+
+            // glm::mat4 rot = glm::mat4(u.x, v.x, w.x, 0, u.y, v.y, w.y, 0, u.z, v.z, w.z, 0, 0, 0, 0, 1);
+            // glm::mat4 trans = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -m_cam.pos.x, -m_cam.pos.y, -m_cam.pos.z, 1);
+            // m_cam.view = rot * trans;
+            // m_cam.viewInv = glm::inverse(m_cam.view);
+
+            glUseProgram(m_shader);
+            declareCameraUniforms();
+            glUseProgram(0);
         }
 
         update(); // asks for a PaintGL() call to occur
@@ -451,33 +444,32 @@ void Realtime::timerEvent(QTimerEvent *event) {
     bool updatedoccurred = false;
     // Use deltaTime and m_keyMap here to move around
     if (m_keyMap[Qt::Key_W]) {
-        m_cam.pos += (5 * deltaTime * m_cam.look);
+        m_cam.pos += (5 * deltaTime * glm::normalize(m_cam.look));
         updatedoccurred = true;
     } else if (m_keyMap[Qt::Key_S]) {
-        m_cam.pos -= (5 * deltaTime * m_cam.look);
+        m_cam.pos -= (5 * deltaTime * glm::normalize(m_cam.look));
         updatedoccurred = true;
     }
 
     if (m_keyMap[Qt::Key_A]) {
-        glm::vec4 move = glm::vec4(glm::cross(glm::vec3(m_cam.look), glm::vec3(m_cam.up)), 0);
+        glm::vec4 move = glm::vec4(glm::normalize(glm::cross(glm::vec3(m_cam.look), glm::vec3(m_cam.up))), 0);
         m_cam.pos -= (5 * deltaTime * move);
         updatedoccurred = true;
     } else if (m_keyMap[Qt::Key_D]) {
-        glm::vec4 move = glm::vec4(glm::cross(glm::vec3(m_cam.look), glm::vec3(m_cam.up)), 0);
+        glm::vec4 move = glm::vec4(glm::normalize(glm::cross(glm::vec3(m_cam.look), glm::vec3(m_cam.up))), 0);
         m_cam.pos += (5 * deltaTime * move);
         updatedoccurred = true;
     }
 
     if (m_keyMap[Qt::Key_Space]) {
-        glm::vec4 translate = m_cam.view * glm::vec4(0, 1, 0, 0);
+        glm::vec4 translate = glm::vec4(0, 1, 0, 0); // m viw
         m_cam.pos += (5 * deltaTime * translate);
         updatedoccurred = true;
     } else if (m_keyMap[Qt::Key_Control]) {
-        glm::vec4 translate = m_cam.view * glm::vec4(0, 1, 0, 0);
+        glm::vec4 translate = glm::vec4(0, 1, 0, 0);
         m_cam.pos -= (5 * deltaTime * translate);
         updatedoccurred = true;
     }
-
 
     if (updatedoccurred) {
         glm::vec3 w = -glm::normalize(glm::vec3(m_cam.look));
@@ -488,9 +480,11 @@ void Realtime::timerEvent(QTimerEvent *event) {
         glm::mat4 trans = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -m_cam.pos.x, -m_cam.pos.y, -m_cam.pos.z, 1);
         m_cam.view = rot * trans;
         m_cam.viewInv = glm::inverse(m_cam.view);
+
+        glUseProgram(m_shader);
+        declareCameraUniforms();
+        glUseProgram(0);
     }
-
-
     update(); // asks for a PaintGL() call to occur
 }
 
@@ -499,8 +493,14 @@ void Realtime::saveViewportImage(std::string filePath) {
     // Make sure we have the right context and everything has been drawn
     makeCurrent();
 
-    int fixedWidth = 1024;
-    int fixedHeight = 768;
+    // int fixedWidth = 1024;
+    // int fixedHeight = 768;
+
+    // CORRECT [REPLACE WITH THIS]
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    int fixedWidth = viewport[2];
+    int fixedHeight = viewport[3];
 
     // Create Frame Buffer
     GLuint fbo;
@@ -558,59 +558,52 @@ void Realtime::saveViewportImage(std::string filePath) {
     glDeleteFramebuffers(1, &fbo);
 }
 
-void Realtime::rebuildMatrices() { // does not use disallowed functions (i hope)
+void Realtime::rebuildCamera() {
     glm::vec3 look = glm::vec3(m_renderdata.cameraData.look);
+
     glm::vec3 up = glm::vec3(m_renderdata.cameraData.up);
     glm::vec3 pos = glm::vec3(m_renderdata.cameraData.pos);
+    // std::cout << m_renderdata.cameraData.look[3] << " hi ???  " << m_renderdata.cameraData.up[3] << " " << m_renderdata.cameraData.pos[3] << std::endl;
     glm::vec3 w = -glm::normalize(look);
     glm::vec3 v = glm::normalize(up - (glm::dot(up, w) * w));
     glm::vec3 u = glm::cross(v, w);
 
-    glm::mat4 rot = glm::mat4(u.x, v.x, w.x, 0, u.y, v.y, w.y, 0, u.z, v.z, w.z, 0, 0, 0, 0, 1);
-    glm::mat4 trans = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -pos.x, -pos.y, -pos.z, 1);
+    glm::mat4 rot = glm::mat4(u.x, v.x, w.x, 0,
+                              u.y, v.y, w.y, 0,
+                              u.z, v.z, w.z, 0,
+                              0, 0, 0, 1.f);
+    glm::mat4 trans = glm::mat4(1.f, 0, 0, 0,
+                                0, 1.f, 0, 0,
+                                0, 0, 1.f, 0,
+                                -pos.x, -pos.y, -pos.z, 1.f);
     glm::mat4 viewMatrix = rot * trans;
 
     glm::mat4 viewInv = glm::inverse(m_cam.view);
-    // std::cout << pos.x << " " << pos.y << "  " << pos.z << std::endl;
-    // std::cout << look.x << " " << look.y << "  " << look.z << std::endl;
 
     m_cam = Camera{viewMatrix, viewInv, glm::vec4{pos.x, pos.y, pos.z, 1}, m_renderdata.cameraData.look, m_renderdata.cameraData.up,
-                 m_renderdata.cameraData.heightAngle, m_renderdata.cameraData.aperture, m_renderdata.cameraData.focalLength};
+                   m_renderdata.cameraData.heightAngle, m_renderdata.cameraData.aperture, m_renderdata.cameraData.focalLength};
+
+}
+
+void Realtime::rebuildMatrices() {
 
     near = settings.nearPlane;
     far = settings.farPlane;
-    std::cout << near << " near far wherever you are " << far << std::endl;
     float c = -near/far;
-    std::cout << "c: " << c << std::endl;
-    float widthAngle = m_cam.heightAngle * ((size().width() * m_devicePixelRatio)/(size().height() * m_devicePixelRatio)); // find value
+    float widthAngle = m_cam.heightAngle * (size().width()/(float)size().height());// ((size().width() * m_devicePixelRatio)/(size().height() * m_devicePixelRatio)); // find value
 
-    glm::mat4 unhinging = glm::mat4(1, 0, 0, 0,
-                                  0, 1, 0, 0,
-                                  0, 0, (1./(1.+c)), -1,
-                                  0, 0, ((-c)/(1.+c)), 0);
-    glm::mat4 scaling = glm::mat4((1./(far*tan(widthAngle/2.))), 0, 0, 0,
-                                    0, (1./(far*tan(m_cam.heightAngle/2.))), 0, 0,
-                                    0, 0, (1./far), 0,
-                                    0, 0, 0, 1);
-    m_proj = glm::mat4(1, 0, 0, 0,
-                       0, 1, 0, 0,
-                       0, 0, -2, 0,
-                       0, 0, -1, 1) * unhinging * scaling;
-
-    // glm::vec4 temp_world_pos = scaling * m_cam.view * glm::mat4(1, 0, 0, 0,
-    //                                                            0, 1, 0, 0,
-    //                                                            0, 0, 1, 0,
-    //                                                            0, 0, 0, 1) * glm::vec4(0, 0, 0, 1);
-    // std::cout << temp_world_pos.x << " " << temp_world_pos.y << " " << temp_world_pos.z << " " << temp_world_pos.w << std::endl;
-
-    // temp_world_pos = unhinging * temp_world_pos;
-    // std::cout << temp_world_pos.x << " " << temp_world_pos.y << " " << temp_world_pos.z << " " << temp_world_pos.w << std::endl;
-
-    // temp_world_pos = m_proj * m_cam.view * glm::mat4(1, 0, 0, 0,
-    //                                                               0, 1, 0, 0,
-    //                                                               0, 0, 1, 0,
-    //                                                               0, 0, 0, 1) * glm::vec4(0, 0, 0, 1);
-    // std::cout << temp_world_pos.x << " " << temp_world_pos.y << " " << temp_world_pos.z << " " << temp_world_pos.w << std::endl;
+    glm::mat4 unhinging = glm::mat4(1.f, 0, 0, 0,
+                                  0, 1.f, 0, 0,
+                                  0, 0, (1.f/(1.f+c)), -1.f,
+                                  0, 0, ((-c)/(1.f+c)), 0);
+    glm::mat4 scaling = glm::mat4((1.f/(far*tan(widthAngle/2.f))), 0, 0, 0,
+                                    0, (1.f/(far*tan(m_cam.heightAngle/2.f))), 0, 0,
+                                    0, 0, (1.f/far), 0,
+                                    0, 0, 0, 1.f);
+    m_proj = glm::mat4(1.f, 0, 0, 0,
+                       0, 1.f, 0, 0,
+                       0, 0, -2.f, 0,
+                       0, 0, -1.f, 1.f) * unhinging * scaling;
 
 }
 

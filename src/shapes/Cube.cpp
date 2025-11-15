@@ -1,8 +1,8 @@
 #include "Cube.h"
 
 void Cube::updateParams(int param1) {
-    m_vertexData = std::vector<float>();
-    m_param1 = param1;
+    m_vertexData.clear(); //  = std::vector<float>();
+    m_param1 = std::max(1, param1);
     setVertexData();
 }
 

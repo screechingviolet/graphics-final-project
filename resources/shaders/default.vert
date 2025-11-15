@@ -12,6 +12,7 @@ out vec3 world_normal;
 
 // Task 6: declare a uniform mat4 to store model matrix
 uniform mat4 model;
+uniform mat4 model_inv_trans;
 
 // Task 7: declare uniform mat4's for the view and projection matrix
 uniform mat4 view;
@@ -23,7 +24,11 @@ void main() {
     vec4 temp_pos = vec4(position, 1.0);
     vec4 new_pos = vec4(model * temp_pos);
     world_position = new_pos.xyz;
-    world_normal = transpose(inverse(mat3(model))) * normalize(normal);
+    vec4 new_norm = (model_inv_trans * vec4(normal, 0.0)); // (model_inv_trans * normalize(vec4(normal, 0.0)));
+    new_norm.w = 0;
+    new_norm = normalize(new_norm);
+
+    world_normal = new_norm.xyz; // inverse(transpose(mat3(model)))
 
     // Recall that transforming normals requires obtaining the inverse-transpose of the model matrix!
     // In projects 5 and 6, consider the performance implications of performing this here.
