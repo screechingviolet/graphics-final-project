@@ -43,6 +43,9 @@ add_executable(${PROJECT_NAME}
     src/utils/aspectratiowidget/aspectratiowidget.hpp
     src/shapes/Cone.cpp src/shapes/Cone.h src/shapes/Cube.cpp src/shapes/Cube.h src/shapes/Cylinder.cpp src/shapes/Cylinder.h src/shapes/Sphere.cpp src/shapes/Sphere.h
     src/camera.h src/camera.cpp
+    src/cgltf.h
+    src/shapes/mesh.h src/shapes/mesh.cpp
+    src/uniforms.cpp
 
 )
 

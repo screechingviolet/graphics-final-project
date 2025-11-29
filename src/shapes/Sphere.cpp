@@ -37,7 +37,7 @@ void Sphere::makeWedge(float currentTheta, float nextTheta) {
     float angleStep = (M_PI)/m_param1;
     float currTheta = currentTheta;
     float nxtTheta = nextTheta;
-    std::cout << currTheta << " " << nxtTheta << std::endl;
+    // std::cout << currTheta << " " << nxtTheta << std::endl;
     for (float phi = 0.; phi < M_PI; phi += angleStep) {
         // top left is (x,y,z) with currenttheta and phi
         // top right is nextheta and phi

@@ -19,6 +19,7 @@
 #include <shapes/Cube.h>
 #include <shapes/Cone.h>
 #include <shapes/Cylinder.h>
+#include <shapes/mesh.h>
 
 
 struct VboVao {
@@ -40,6 +41,8 @@ public:
     void rebuildMatrices();
     void rebuildCamera();
     void setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles);
+    void deleteAllMeshes();
+    void rebuildMeshes();
     glm::mat4 rotationhelper(glm::vec4 u, float angle);
 
 public slots:
@@ -89,6 +92,10 @@ private:
 
     Cylinder* m_cylinder = new Cylinder();
     VboVao* m_cylinderIds = new VboVao();
+
+    std::unordered_map<std::string, Mesh> m_meshes;
+    std::unordered_map<std::string, VboVao> m_meshIds;
+
 
 
 };

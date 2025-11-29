@@ -107,6 +107,40 @@ void Realtime::initializeGL() {
     m_cylinder->updateParams(settings.shapeParameter1, settings.shapeParameter2);
     setupPrimitives(m_cylinderIds, m_cylinder->generateShape());
 
+    rebuildMeshes();
+}
+
+void Realtime::deleteAllMeshes() {
+    for (auto [meshfile, vaovbo]: m_meshIds) {
+        glDeleteVertexArrays(1, &vaovbo.shape_vao);
+        glDeleteBuffers(1, &vaovbo.shape_vbo);
+    }
+
+    m_meshIds.clear();
+    m_meshes.clear();
+}
+
+void Realtime::rebuildMeshes() {
+    deleteAllMeshes();
+    std::cout << "rebuilding meshes " << std::endl;
+
+    std::unordered_set<std::string> meshfiles;
+    for (RenderShapeData& shape: m_renderdata.shapes) {
+        if (shape.primitive.type == PrimitiveType::PRIMITIVE_MESH) {
+            std::cout << "Found a mesh" << std::endl;
+            meshfiles.insert(shape.primitive.meshfile);
+        }
+    }
+    for (std::string meshfile: meshfiles) {
+        // gen a buffer and vao
+        glGenBuffers(1, &m_meshIds[meshfile].shape_vbo);
+        glGenVertexArrays(1, &m_meshIds[meshfile].shape_vao);
+        // create mesh and call update on the new mesh
+        // m_meshes[meshfile] = Mesh();
+        m_meshes[meshfile].updateMesh(meshfile);
+        // setupprimitives
+        setupPrimitives(&m_meshIds[meshfile], m_meshes[meshfile].generateShape());
+    }
 }
 
 void Realtime::setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles) {
@@ -114,7 +148,7 @@ void Realtime::setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& tr
 
     // Task 9: Pass the triangle vector into your VBO here
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * triangles.size(), triangles.data(), GL_STATIC_DRAW);
-
+    std::cout << triangles[0] << triangles[1] << triangles[2] << std::endl;
     // Task 11: Generate a VAO here and store it in m_vao
     glBindVertexArray(shape_ids->shape_vao);
 
@@ -131,16 +165,10 @@ void Realtime::setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& tr
 
 void Realtime::paintGL() {
     // Students: anything requiring OpenGL calls every frame should be done here
-    // set min parameters for the shapes
-
-    // Task 15: Clear the screen here
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Bind the shader
     glUseProgram(m_shader);
-
-    // decl global uniforms and for all 8 lights
-    // declGeneralUniforms(); // change the uniforms in between draws // can i make this more efficient?
 
     GLuint vertices;
     // for each shape: bind vao, decl shape uniforms, draw, unbind, repeat
@@ -166,11 +194,15 @@ void Realtime::paintGL() {
             glBindVertexArray(m_sphereIds->shape_vao);
             break;
         default:
-            vertices = 0;
+            if (m_meshes.count(shape.primitive.meshfile) == 0) {
+                vertices = 0;
+            } else {
+                vertices = m_meshes[shape.primitive.meshfile].num_triangles;
+                glBindVertexArray(m_meshIds[shape.primitive.meshfile].shape_vao);
+            }
             break;
         }
 
-        // pass shape.ctm
         declSpecificUniforms(shape);
 
         // Task 17: Draw your VAO here
@@ -193,7 +225,6 @@ void Realtime::declareCameraUniforms() {
 
     GLint loc_cam_pos = glGetUniformLocation(m_shader, "camPos");
     glUniform4fv(loc_cam_pos, 1, &m_cam.pos[0]); // general
-    // -------------------
 }
 
 void Realtime::declGeneralUniforms() { // how often do i do this - every vao/vbo drawn
@@ -206,7 +237,6 @@ void Realtime::declGeneralUniforms() { // how often do i do this - every vao/vbo
 
     GLint loc_ks = glGetUniformLocation(m_shader, "ks");
     glUniform1f(loc_ks, m_renderdata.globalData.ks);
-    // -------------------
 
     // --- LIGHT DATA ---
     GLfloat lightColors[8*3]; // scenecolor is 0 to 1 i think
@@ -281,6 +311,7 @@ void Realtime::sceneChanged() {
     SceneParser::parse(settings.sceneFilePath, m_renderdata);
     rebuildCamera();
     rebuildMatrices();
+    rebuildMeshes();
 
     glUseProgram(m_shader);
     declareCameraUniforms();
