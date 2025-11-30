@@ -40,9 +40,10 @@ public:
     void declareCameraUniforms();
     void rebuildMatrices();
     void rebuildCamera();
-    void setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles);
+    void setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles, bool anim = false);
     void deleteAllMeshes();
     void rebuildMeshes();
+    void buildGeometry();
     glm::mat4 rotationhelper(glm::vec4 u, float angle);
 
 public slots:
@@ -74,6 +75,7 @@ private:
     double m_devicePixelRatio;
 
     GLuint m_shader = 0; // Stores id of shader program
+    GLuint m_shaderAnim = 0;
     RenderData m_renderdata;
     // GLuint m_vbo;    // Stores id of VBO
     // GLuint m_vao;    // Stores id of VAO

@@ -84,83 +84,11 @@ void Realtime::initializeGL() {
     glClearColor(0, 0, 0, 1.0);
 
     // Shader setup (DO NOT EDIT)
-    m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
-
-
-    glGenBuffers(1, &m_sphereIds->shape_vbo);
-    glGenVertexArrays(1, &m_sphereIds->shape_vao);
-    m_sphere->updateParams(settings.shapeParameter1, settings.shapeParameter2);
-    setupPrimitives(m_sphereIds, m_sphere->generateShape());
-
-    glGenBuffers(1, &m_cubeIds->shape_vbo);
-    glGenVertexArrays(1, &m_cubeIds->shape_vao);
-    m_cube->updateParams(settings.shapeParameter1);
-    setupPrimitives(m_cubeIds, m_cube->generateShape());
-
-    glGenBuffers(1, &m_coneIds->shape_vbo);
-    glGenVertexArrays(1, &m_coneIds->shape_vao);
-    m_cone->updateParams(settings.shapeParameter1, settings.shapeParameter2);
-    setupPrimitives(m_coneIds, m_cone->generateShape());
-
-    glGenBuffers(1, &m_cylinderIds->shape_vbo);
-    glGenVertexArrays(1, &m_cylinderIds->shape_vao);
-    m_cylinder->updateParams(settings.shapeParameter1, settings.shapeParameter2);
-    setupPrimitives(m_cylinderIds, m_cylinder->generateShape());
+    // m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
+    m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/anim.vert", ":/resources/shaders/anim.frag");
+    buildGeometry();
 
     rebuildMeshes();
-}
-
-void Realtime::deleteAllMeshes() {
-    for (auto [meshfile, vaovbo]: m_meshIds) {
-        glDeleteVertexArrays(1, &vaovbo.shape_vao);
-        glDeleteBuffers(1, &vaovbo.shape_vbo);
-    }
-
-    m_meshIds.clear();
-    m_meshes.clear();
-}
-
-void Realtime::rebuildMeshes() {
-    deleteAllMeshes();
-    std::cout << "rebuilding meshes " << std::endl;
-
-    std::unordered_set<std::string> meshfiles;
-    for (RenderShapeData& shape: m_renderdata.shapes) {
-        if (shape.primitive.type == PrimitiveType::PRIMITIVE_MESH) {
-            std::cout << "Found a mesh" << std::endl;
-            meshfiles.insert(shape.primitive.meshfile);
-        }
-    }
-    for (std::string meshfile: meshfiles) {
-        // gen a buffer and vao
-        glGenBuffers(1, &m_meshIds[meshfile].shape_vbo);
-        glGenVertexArrays(1, &m_meshIds[meshfile].shape_vao);
-        // create mesh and call update on the new mesh
-        // m_meshes[meshfile] = Mesh();
-        m_meshes[meshfile].updateMesh(meshfile);
-        // setupprimitives
-        setupPrimitives(&m_meshIds[meshfile], m_meshes[meshfile].generateShape());
-    }
-}
-
-void Realtime::setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles) {
-    glBindBuffer(GL_ARRAY_BUFFER, shape_ids->shape_vbo);
-
-    // Task 9: Pass the triangle vector into your VBO here
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * triangles.size(), triangles.data(), GL_STATIC_DRAW);
-    std::cout << triangles[0] << triangles[1] << triangles[2] << std::endl;
-    // Task 11: Generate a VAO here and store it in m_vao
-    glBindVertexArray(shape_ids->shape_vao);
-
-    // Task 13: Add position and normal attributes to your VAO here
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void*>(0));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void*>(3 * sizeof(GLfloat)));
-
-    // Task 14: Unbind your VBO and VAO here
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 }
 
 void Realtime::paintGL() {
@@ -213,90 +141,6 @@ void Realtime::paintGL() {
 
     // Unbind the shader
     glUseProgram(0);
-}
-
-void Realtime::declareCameraUniforms() {
-    // --- CAMERA DATA ---
-    GLint loc_view = glGetUniformLocation(m_shader, "view");
-    glUniformMatrix4fv(loc_view, 1, GL_FALSE, &m_cam.view[0][0]); // general
-
-    GLint loc_proj = glGetUniformLocation(m_shader, "proj");
-    glUniformMatrix4fv(loc_proj, 1, GL_FALSE, &m_proj[0][0]); // general
-
-    GLint loc_cam_pos = glGetUniformLocation(m_shader, "camPos");
-    glUniform4fv(loc_cam_pos, 1, &m_cam.pos[0]); // general
-}
-
-void Realtime::declGeneralUniforms() { // how often do i do this - every vao/vbo drawn
-    // --- GLOBAL DATA ---
-    GLint loc_ka = glGetUniformLocation(m_shader, "ka");
-    glUniform1f(loc_ka, m_renderdata.globalData.ka);
-
-    GLint loc_kd = glGetUniformLocation(m_shader, "kd");
-    glUniform1f(loc_kd, m_renderdata.globalData.kd);
-
-    GLint loc_ks = glGetUniformLocation(m_shader, "ks");
-    glUniform1f(loc_ks, m_renderdata.globalData.ks);
-
-    // --- LIGHT DATA ---
-    GLfloat lightColors[8*3]; // scenecolor is 0 to 1 i think
-    GLfloat lightFunctions[8*3];
-    GLfloat lightPenumbras[8];
-    GLfloat lightAngles[8];
-    GLint lightTypes[8];
-    GLfloat lightPositions[8*4];
-    GLfloat lightDirections[8*4];
-    for (int i = 0; i < m_renderdata.lights.size(); i++) {
-        for (int j = 0; j < 3; j++) lightColors[i*3+j] = m_renderdata.lights[i].color[j];
-        switch (m_renderdata.lights[i].type) {
-        case LightType::LIGHT_DIRECTIONAL:
-            lightTypes[i] = 1;
-            for (int j = 0; j < 4; j++) lightDirections[i*4+j] = m_renderdata.lights[i].dir[j];
-            break;
-        case LightType::LIGHT_POINT:
-            lightTypes[i] = 0;
-            for (int j = 0; j < 3; j++) lightFunctions[i*3+j] = m_renderdata.lights[i].function[j];
-            for (int j = 0; j < 4; j++) lightPositions[i*4+j] = m_renderdata.lights[i].pos[j];
-            break;
-        case LightType::LIGHT_SPOT:
-            lightTypes[i] = 2;
-            lightAngles[i] = m_renderdata.lights[i].angle;
-            lightPenumbras[i] = m_renderdata.lights[i].penumbra;
-            for (int j = 0; j < 3; j++) lightFunctions[i*3+j] = m_renderdata.lights[i].function[j];
-            for (int j = 0; j < 4; j++) lightDirections[i*4+j] = m_renderdata.lights[i].dir[j];
-            for (int j = 0; j < 4; j++) lightPositions[i*4+j] = m_renderdata.lights[i].pos[j];
-            break;
-        default:
-            break;
-        }
-    }
-    glUniform1i(glGetUniformLocation(m_shader, "lightsNum"), m_renderdata.lights.size());
-    glUniform3fv(glGetUniformLocation(m_shader, "lightColors"), 8, lightColors);
-    glUniform1iv(glGetUniformLocation(m_shader, "lightTypes"), 8, lightTypes);
-    glUniform1fv(glGetUniformLocation(m_shader, "lightPenumbras"), 8, lightPenumbras);
-    glUniform1fv(glGetUniformLocation(m_shader, "lightAngles"), 8, lightAngles);
-    glUniform3fv(glGetUniformLocation(m_shader, "lightFunctions"), 8, lightFunctions);
-    glUniform4fv(glGetUniformLocation(m_shader, "lightPositions"), 8, lightPositions);
-    glUniform4fv(glGetUniformLocation(m_shader, "lightDirections"), 8, lightDirections);
-
-}
-
-void Realtime::declSpecificUniforms(RenderShapeData& shape) { // is it bad to pass a whole matrix
-    // --- SHAPE DATA ---
-    GLint loc_shiny = glGetUniformLocation(m_shader, "shininess");
-    glUniform1f(loc_shiny, shape.primitive.material.shininess); // material specific
-
-    GLint loc_model = glGetUniformLocation(m_shader, "model");
-    glUniformMatrix4fv(loc_model, 1, GL_FALSE, &shape.ctm[0][0]); // shape ctm
-
-    glUniformMatrix4fv(glGetUniformLocation(m_shader, "model_inv_trans"), 1, GL_FALSE, &shape.ctm_inv_trans[0][0]);
-
-    GLfloat shapeColorA[3] = {shape.primitive.material.cAmbient[0], shape.primitive.material.cAmbient[1], shape.primitive.material.cAmbient[2]};
-    GLfloat shapeColorD[3] = {shape.primitive.material.cDiffuse[0], shape.primitive.material.cDiffuse[1], shape.primitive.material.cDiffuse[2]};
-    GLfloat shapeColorS[3] = {shape.primitive.material.cSpecular[0], shape.primitive.material.cSpecular[1], shape.primitive.material.cSpecular[2]};
-    glUniform3fv(glGetUniformLocation(m_shader, "shapeColorA"), 1, shapeColorA);
-    glUniform3fv(glGetUniformLocation(m_shader, "shapeColorD"), 1, shapeColorD);
-    glUniform3fv(glGetUniformLocation(m_shader, "shapeColorS"), 1, shapeColorS);
 }
 
 void Realtime::resizeGL(int w, int h) {
@@ -434,17 +278,6 @@ void Realtime::mouseMoveEvent(QMouseEvent *event) {
 
 
         if (updated) {
-            // m_cam.look = rotation * m_cam.look;
-            // m_cam.up = rotation * m_cam.up; // only do this for roty maybe?
-            // glm::vec3 w = -glm::normalize(glm::vec3(m_cam.look));
-            // glm::vec3 v = glm::normalize(glm::vec3(m_cam.up) - (glm::dot(glm::vec3(m_cam.up), w) * w));
-            // glm::vec3 u = glm::cross(v, w);
-
-            // glm::mat4 rot = glm::mat4(u.x, v.x, w.x, 0, u.y, v.y, w.y, 0, u.z, v.z, w.z, 0, 0, 0, 0, 1);
-            // glm::mat4 trans = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -m_cam.pos.x, -m_cam.pos.y, -m_cam.pos.z, 1);
-            // m_cam.view = rot * trans;
-            // m_cam.viewInv = glm::inverse(m_cam.view);
-
             glUseProgram(m_shader);
             declareCameraUniforms();
             glUseProgram(0);
@@ -588,54 +421,3 @@ void Realtime::saveViewportImage(std::string filePath) {
     glDeleteRenderbuffers(1, &rbo);
     glDeleteFramebuffers(1, &fbo);
 }
-
-void Realtime::rebuildCamera() {
-    glm::vec3 look = glm::vec3(m_renderdata.cameraData.look);
-
-    glm::vec3 up = glm::vec3(m_renderdata.cameraData.up);
-    glm::vec3 pos = glm::vec3(m_renderdata.cameraData.pos);
-    // std::cout << m_renderdata.cameraData.look[3] << " hi ???  " << m_renderdata.cameraData.up[3] << " " << m_renderdata.cameraData.pos[3] << std::endl;
-    glm::vec3 w = -glm::normalize(look);
-    glm::vec3 v = glm::normalize(up - (glm::dot(up, w) * w));
-    glm::vec3 u = glm::cross(v, w);
-
-    glm::mat4 rot = glm::mat4(u.x, v.x, w.x, 0,
-                              u.y, v.y, w.y, 0,
-                              u.z, v.z, w.z, 0,
-                              0, 0, 0, 1.f);
-    glm::mat4 trans = glm::mat4(1.f, 0, 0, 0,
-                                0, 1.f, 0, 0,
-                                0, 0, 1.f, 0,
-                                -pos.x, -pos.y, -pos.z, 1.f);
-    glm::mat4 viewMatrix = rot * trans;
-
-    glm::mat4 viewInv = glm::inverse(m_cam.view);
-
-    m_cam = Camera{viewMatrix, viewInv, glm::vec4{pos.x, pos.y, pos.z, 1}, m_renderdata.cameraData.look, m_renderdata.cameraData.up,
-                   m_renderdata.cameraData.heightAngle, m_renderdata.cameraData.aperture, m_renderdata.cameraData.focalLength};
-
-}
-
-void Realtime::rebuildMatrices() {
-
-    near = settings.nearPlane;
-    far = settings.farPlane;
-    float c = -near/far;
-    float widthAngle = m_cam.heightAngle * (size().width()/(float)size().height());// ((size().width() * m_devicePixelRatio)/(size().height() * m_devicePixelRatio)); // find value
-
-    glm::mat4 unhinging = glm::mat4(1.f, 0, 0, 0,
-                                  0, 1.f, 0, 0,
-                                  0, 0, (1.f/(1.f+c)), -1.f,
-                                  0, 0, ((-c)/(1.f+c)), 0);
-    glm::mat4 scaling = glm::mat4((1.f/(far*tan(widthAngle/2.f))), 0, 0, 0,
-                                    0, (1.f/(far*tan(m_cam.heightAngle/2.f))), 0, 0,
-                                    0, 0, (1.f/far), 0,
-                                    0, 0, 0, 1.f);
-    m_proj = glm::mat4(1.f, 0, 0, 0,
-                       0, 1.f, 0, 0,
-                       0, 0, -2.f, 0,
-                       0, 0, -1.f, 1.f) * unhinging * scaling;
-
-}
-
-

@@ -46,6 +46,8 @@ add_executable(${PROJECT_NAME}
     src/cgltf.h
     src/shapes/mesh.h src/shapes/mesh.cpp
     src/uniforms.cpp
+    src/geometry.cpp
+
 
 )
 
@@ -73,6 +75,8 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
     FILES
         resources/shaders/default.frag
         resources/shaders/default.vert
+        resources/shaders/anim.frag
+        resources/shaders/anim.vert
 )
 
 # GLEW: this provides support for Windows (including 64-bit)
