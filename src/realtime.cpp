@@ -99,9 +99,10 @@ void Realtime::paintGL() {
     glUseProgram(m_shader);
 
     GLuint vertices;
+    int animating;
     // for each shape: bind vao, decl shape uniforms, draw, unbind, repeat
     for (RenderShapeData &shape: m_renderdata.shapes) {
-
+        animating = 0;
         // Task 16: Bind your VAO here
         // glBindVertexArray(m_vao);
         switch (shape.primitive.type) {
@@ -128,10 +129,12 @@ void Realtime::paintGL() {
                 vertices = m_meshes[shape.primitive.meshfile].num_triangles;
                 glBindVertexArray(m_meshIds[shape.primitive.meshfile].shape_vao);
             }
+            if (m_meshes[shape.primitive.meshfile].hasAnimation) animating = 1;
             break;
         }
 
         declSpecificUniforms(shape);
+        glUniform1i(glGetUniformLocation(m_shader, "animating"), animating);
 
         // Task 17: Draw your VAO here
         glDrawArrays(GL_TRIANGLES, 0, vertices);
@@ -304,6 +307,32 @@ void Realtime::timerEvent(QTimerEvent *event) {
     int elapsedms   = m_elapsedTimer.elapsed();
     float deltaTime = elapsedms * 0.001f;
     m_elapsedTimer.restart();
+
+    for (auto &[key, meshval]: m_meshes) {
+        if (meshval.hasAnimation) {
+            meshval.updateFinalBoneMatrices(deltaTime + meshval.m_meshAnim.m_currentTime);
+            meshval.m_meshAnim.m_currentTime += deltaTime;
+
+            if (meshval.m_meshAnim.m_currentTime >= meshval.m_meshAnim.m_animation.m_duration) {
+                meshval.m_meshAnim.m_currentTime = 0.0;
+            }
+
+            glUseProgram(m_shader);
+            int num = meshval.m_meshAnim.m_finalBoneMatrices.size();
+            float finalMatrices[num*16];
+            for (int i = 0; i < num; i++) {
+                for (int j = 0; j < 16; j++) {
+                    finalMatrices[16*i + j] = meshval.m_meshAnim.m_finalBoneMatrices[i][j/4][j%4]; // check thisline because i made it up completely
+                    // std::cout << finalMatrices[16*i + j] << " ";
+                }
+                // std::cout << std::endl;
+            }
+            glUniform1i(glGetUniformLocation(m_shader, "numBones"), num);
+            glUniformMatrix4fv(glGetUniformLocation(m_shader, "finalBoneMatrices"), num, GL_FALSE, finalMatrices);
+
+            glUseProgram(0);
+        }
+    }
 
     bool updatedoccurred = false;
     // Use deltaTime and m_keyMap here to move around
