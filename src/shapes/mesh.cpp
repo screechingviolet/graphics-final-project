@@ -100,7 +100,7 @@ glm::mat4 Mesh::getLocalTransformPreprocessing(cgltf_node* node) {
     return glm::make_mat4(out);
 }
 
-// I referenced GPT and the cgltf readme to write this code
+// I referenced GPT and the cgltf readme to write this function
 void Mesh::setVertexData(const char* meshfile) {
     cgltf_options options = {cgltf_file_type_glb, 0};
     cgltf_data* data = NULL;
@@ -207,7 +207,6 @@ void Mesh::setVertexData(const char* meshfile) {
                 m_vertexData.push_back(n.y);
                 m_vertexData.push_back(n.z);
                 if (hasAnimation) {
-                    std::cout << "adding joints and weights" << std::endl;
                     const glm::vec4& joint = joints_temp[i];
                     const glm::vec4& weight = weights_temp[i];
                     m_vertexData.push_back(joint.x);
@@ -218,7 +217,7 @@ void Mesh::setVertexData(const char* meshfile) {
                     m_vertexData.push_back(weight.y);
                     m_vertexData.push_back(weight.z);
                     m_vertexData.push_back(weight.w);
-                    std::cout << weight.x << " " << weight.y << " " << weight.z << " " << weight.w << std::endl;
+                    // std::cout << weight.x << " " << weight.y << " " << weight.z << " " << weight.w << std::endl;
                 }
             };
 
@@ -257,18 +256,11 @@ void Mesh::setVertexData(const char* meshfile) {
                 inv_bind = glm::make_mat4(buf);
                 m_meshAnim.m_animation.m_allBones.push_back(Bone(i, std::vector<KeyframeVec3>{}, std::vector<KeyframeQuaternion>{}, std::vector<KeyframeVec3>{}, inv_bind, -1));
                 tempNodeToIdx[skin->joints[i]] = i;
-
-
-                // find root
-                // if (skin->joints[i] == root) {
-                    // std::cout << "Found root\n";
-                    // m_meshAnim.m_animation.m_rootId = i; // maybe remove
-                // }
             }
-            if (root != nullptr) {
+            // if (root != nullptr) {
                 // COME BACK
                 // m_meshAnim.m_animation.m_allBones.push_back(Bone(skin->joints_count, std::vector<KeyframeVec3>{}, std::vector<KeyframeQuaternion>{}, std::vector<KeyframeVec3>{}, glm::mat4(1.0), -1));
-            }
+            // }
 
             // now fill in parents
             for (int i = 0; i < m_meshAnim.m_animation.m_allBones.size(); i++) {
@@ -287,7 +279,7 @@ void Mesh::setVertexData(const char* meshfile) {
                     curr = curr->parent;
                     m_meshAnim.m_animation.m_allBones[i].m_constParentTransform = getLocalTransformPreprocessing(curr) * m_meshAnim.m_animation.m_allBones[i].m_constParentTransform;
                 }
-                std::cout << "are equal: " << glm::to_string(m_meshAnim.m_animation.m_allBones[i].m_constParentTransform * m_meshAnim.m_animation.m_allBones[i].m_boneTransform) << "\n" <<  glm::to_string(glm::inverse(m_meshAnim.m_animation.m_allBones[i].m_toBoneSpace)) << '\n';
+                // std::cout << "are equal: " << glm::to_string(m_meshAnim.m_animation.m_allBones[i].m_constParentTransform * m_meshAnim.m_animation.m_allBones[i].m_boneTransform) << "\n" <<  glm::to_string(glm::inverse(m_meshAnim.m_animation.m_allBones[i].m_toBoneSpace)) << '\n';
             }
 
             std::cout << "animations" << data->animations_count << std::endl;
@@ -462,24 +454,6 @@ void Mesh::fillVec4FromAccessor(cgltf_accessor* acc, std::vector<glm::vec4>& ver
         glm::vec4 val = glm::vec4(v[0], v[1], v[2], v[3]);
         vertices.push_back(val);
     }
-
-    // cgltf_buffer_view* view = acc->buffer_view;
-    // cgltf_buffer* buf = view->buffer;
-
-    // uint8_t* raw_data = (uint8_t*)buf->data
-    //                     + view->offset
-    //                     + acc->offset;
-
-    // int component_count = cgltf_num_components(acc->type);
-    // int component_size = cgltf_component_size(acc->component_type);
-    // int stride = acc->stride ? acc->stride : component_count * component_size;
-
-    // for (int i = 0; i < acc->count; i++)
-    // {
-    //     float* v = (float*)(raw_data + i * stride);
-    //     glm::vec4 val = glm::vec4(v[0], v[1], v[2], v[3]);
-    //     vertices.push_back(val);
-    // }
 }
 
 void Mesh::filliVec4FromAccessor(cgltf_accessor* acc, std::vector<glm::ivec4>& vertices) {
