@@ -49,36 +49,40 @@ float Bone::interpolateFactor(float prevTime, float nextTime, float timestep, fl
     return (timestepdiff)/(totaldiff);
 }
 
-glm::mat4 Bone::interpolateScale(float timestep, float duration) {
-    if (m_scale.size() == 0) return glm::mat4(1.0);
+glm::vec3 Bone::interpolateScale(float timestep, float duration) {
+    if (m_scale.size() == 0) return glm::vec3(1.0);
 
     int idx = (searchInKeyframeVec3(timestep, m_scale)+m_scale.size())%m_scale.size();
     int nextIdx = (idx + 1)%m_scale.size(); // plus the value mod the value to get safe index
     float factor = interpolateFactor(m_scale[idx].time, m_scale[nextIdx].time, timestep, duration);
     glm::vec3 scaling = glm::mix(m_scale[idx].transform, m_scale[nextIdx].transform, factor);
-    return glm::scale(glm::mat4(1.0f), scaling);
+    return scaling;
+    // return glm::scale(glm::mat4(1.0f), scaling);
 }
 
-glm::mat4 Bone::interpolateRotate(float timestep, float duration) {
-    if (m_rotate.size() == 0) return m_boneTransform;
-    // TEMP
+glm::quat Bone::interpolateRotate(float timestep, float duration) {
+    if (m_rotate.size() == 0) return glm::quat(0, 0, 0, 1.0); // is this actually the default? irrelevant now
+
     int idx = (searchInKeyframeQuat(timestep, m_rotate)+m_rotate.size())%m_rotate.size();
     int nextIdx = (idx + 1)%m_rotate.size(); // plus the value mod the value to get safe index
     float factor = interpolateFactor(m_rotate[idx].time, m_rotate[nextIdx].time, timestep, duration);
-    // std::cerr << "i made i there " << std::endl;
+
     // uses teh wrogn order (Need to load transforms in glm format?)
+    // convert transform to glm format, then slerp, then convert back before returning
     glm::quat rotation = glm::slerp(m_rotate[idx].transform, m_rotate[nextIdx].transform, factor);
-    return glm::toMat4(glm::normalize(rotation));
+    return rotation; // normalize?
+    // return glm::toMat4(glm::normalize(rotation));
 }
 
-glm::mat4 Bone::interpolateTranslate(float timestep, float duration) {
-    if (m_translate.size() == 0) return glm::mat4(1.0);
+glm::vec3 Bone::interpolateTranslate(float timestep, float duration) {
+    if (m_translate.size() == 0) return glm::vec3(0.0);
 
     int idx = (searchInKeyframeVec3(timestep, m_translate)+m_translate.size())%m_translate.size();
     int nextIdx = (idx + 1)%m_translate.size(); // plus the value mod the value to get safe index
     float factor = interpolateFactor(m_translate[idx].time, m_translate[nextIdx].time, timestep, duration);
     glm::vec3 translation = glm::mix(m_translate[idx].transform, m_translate[nextIdx].transform, factor);
-    return glm::translate(glm::mat4(1.0f), translation);
+    return translation;
+    // return glm::translate(glm::mat4(1.0f), translation);
 }
 
 void Mesh::updateMesh(std::string meshfile) {
@@ -94,28 +98,6 @@ glm::mat4 Mesh::getLocalTransformPreprocessing(cgltf_node* node) {
     cgltf_float out[16];
     cgltf_node_transform_local(node, out);
     return glm::make_mat4(out);
-    // old
-    // if (node->has_matrix) {
-    //     std::cout << "has matrix\n";
-    //     return glm::make_mat4(node->matrix);
-    // } else {
-    //     glm::mat4 t, r, s;
-    //     t = r = s = glm::mat4(1.0);
-    //     if (node->has_scale) {
-    //         std::cout << "has scale\n";
-    //         s = glm::scale(s, glm::make_vec3(node->scale));
-    //     }
-    //     if (node->has_rotation) {
-    //         std::cout << "has rotation\n";
-    //         r = glm::mat4_cast(glm::quat(glm::make_vec4(node->rotation)));
-    //     }
-    //     if (node->has_translation) {
-    //         std::cout << "has translation\n";
-    //         t = glm::translate(t, glm::make_vec3(node->translation));
-    //     }
-    //     // m_meshAnim.m_animation.m_allBones[i].m_boneTransform = t * r * s;
-    //     return t * r * s;
-    // }
 }
 
 // I referenced GPT and the cgltf readme to write this code
@@ -227,7 +209,7 @@ void Mesh::setVertexData(const char* meshfile) {
                 if (hasAnimation) {
                     std::cout << "adding joints and weights" << std::endl;
                     const glm::vec4& joint = joints_temp[i];
-                    const glm::ivec4& weight = weights_temp[i];
+                    const glm::vec4& weight = weights_temp[i];
                     m_vertexData.push_back(joint.x);
                     m_vertexData.push_back(joint.y);
                     m_vertexData.push_back(joint.z);
@@ -236,6 +218,7 @@ void Mesh::setVertexData(const char* meshfile) {
                     m_vertexData.push_back(weight.y);
                     m_vertexData.push_back(weight.z);
                     m_vertexData.push_back(weight.w);
+                    std::cout << weight.x << " " << weight.y << " " << weight.z << " " << weight.w << std::endl;
                 }
             };
 
@@ -322,6 +305,7 @@ void Mesh::setVertexData(const char* meshfile) {
                 for (int i = 0; i < main_anim->channels_count; i++) {
                     // std::cerr << i << std::endl;
                     curr = tempNodeToIdx[main_anim->channels[i].target_node];
+                    std::cerr << main_anim->channels[i].sampler->interpolation << " type\n";
                     switch (main_anim->channels[i].target_path) {
                     case cgltf_animation_path_type_translation:
                         time_acc = main_anim->channels[i].sampler->input;
@@ -344,7 +328,7 @@ void Mesh::setVertexData(const char* meshfile) {
                             cgltf_accessor_read_float(time_acc, j, &temp_quat.time, 1);
                             m_meshAnim.m_animation.m_duration = std::max(m_meshAnim.m_animation.m_duration, temp_quat.time);
                             cgltf_accessor_read_float(transform_acc, j, buf2, 4);
-                            temp_quat.transform = glm::make_quat(buf2);
+                            temp_quat.transform = glm::quat(buf2[3], buf2[0], buf2[1], buf2[2]);
                             m_meshAnim.m_animation.m_allBones[curr].m_rotate.push_back(temp_quat);
                         }
                         break;
@@ -374,16 +358,60 @@ void Mesh::setVertexData(const char* meshfile) {
     }
 }
 
+glm::mat4 Mesh::getMatrixFromTRS(glm::vec3 t, glm::quat r, glm::vec3 s) {
+    // THIS CODE IS TAKEN FROM cgltf_node_transform_local
+    float lm[16];
+
+    float tx = t[0];
+    float ty = t[1];
+    float tz = t[2];
+
+    float qx = r.x;
+    float qy = r.y;
+    float qz = r.z;
+    float qw = r.w;
+
+    float sx = s[0];
+    float sy = s[1];
+    float sz = s[2];
+
+    lm[0] = (1 - 2 * qy*qy - 2 * qz*qz) * sx;
+    lm[1] = (2 * qx*qy + 2 * qz*qw) * sx;
+    lm[2] = (2 * qx*qz - 2 * qy*qw) * sx;
+    lm[3] = 0.f;
+
+    lm[4] = (2 * qx*qy - 2 * qz*qw) * sy;
+    lm[5] = (1 - 2 * qx*qx - 2 * qz*qz) * sy;
+    lm[6] = (2 * qy*qz + 2 * qx*qw) * sy;
+    lm[7] = 0.f;
+
+    lm[8] = (2 * qx*qz + 2 * qy*qw) * sz;
+    lm[9] = (2 * qy*qz - 2 * qx*qw) * sz;
+    lm[10] = (1 - 2 * qx*qx - 2 * qy*qy) * sz;
+    lm[11] = 0.f;
+
+    lm[12] = tx;
+    lm[13] = ty;
+    lm[14] = tz;
+    lm[15] = 1.f;
+
+    return glm::make_mat4(lm);
+}
+
 glm::mat4 Mesh::transformForBone(int bone, float timestep) {
     // need to better understand the process
     // return m_meshAnim.m_finalBoneMatrices[bone] = glm::inverse(m_meshAnim.m_animation.m_allBones[bone].m_toBoneSpace); // temp
     if (m_meshAnim.m_visited[bone]) return m_meshAnim.m_finalBoneMatrices[bone];
     else m_meshAnim.m_visited[bone] = true;
     Bone* relevant = &m_meshAnim.m_animation.m_allBones[bone];
-    glm::mat4 localTransform = // relevant->m_boneTransform;
-        relevant->interpolateTranslate(timestep, m_meshAnim.m_animation.m_duration)
-                               * relevant->interpolateRotate(timestep, m_meshAnim.m_animation.m_duration)
-                               * relevant->interpolateScale(timestep, m_meshAnim.m_animation.m_duration);
+    glm::mat4 localTransform;
+    if (relevant->m_rotate.size() == 0 && relevant->m_scale.size() == 0 && relevant->m_translate.size() == 0) {
+        localTransform = relevant->m_boneTransform;
+    } else {
+        localTransform = getMatrixFromTRS(relevant->interpolateTranslate(timestep, m_meshAnim.m_animation.m_duration),
+                                        relevant->interpolateRotate(timestep, m_meshAnim.m_animation.m_duration),
+                                        relevant->interpolateScale(timestep, m_meshAnim.m_animation.m_duration));
+    }
     glm::mat4 worldBone;
 
     if (relevant->parent != -1) worldBone = transformForBone(relevant->parent, timestep) * localTransform;
@@ -424,6 +452,16 @@ void Mesh::fillVec3FromAccessor(cgltf_accessor* acc, std::vector<glm::vec3>& ver
         glm::vec3 val = glm::vec3(v[0], v[1], v[2]);
         vertices.push_back(val);
     }
+}
+
+void Mesh::fillVec4FromAccessor(cgltf_accessor* acc, std::vector<glm::vec4>& vertices) {
+    for (int i = 0; i < acc->count; i++) {
+        cgltf_float v[4];
+        bool res = cgltf_accessor_read_float(acc, i, v, 4);
+        if (res == false) std::cout << "filling vec4 failed\n";
+        glm::vec4 val = glm::vec4(v[0], v[1], v[2], v[3]);
+        vertices.push_back(val);
+    }
 
     // cgltf_buffer_view* view = acc->buffer_view;
     // cgltf_buffer* buf = view->buffer;
@@ -439,30 +477,9 @@ void Mesh::fillVec3FromAccessor(cgltf_accessor* acc, std::vector<glm::vec3>& ver
     // for (int i = 0; i < acc->count; i++)
     // {
     //     float* v = (float*)(raw_data + i * stride);
-    //     glm::vec3 val = glm::vec3(v[0], v[1], v[2]);
-    //     std::cout << v[0] << " " << v[1] << " " << v[2] << "\n";
+    //     glm::vec4 val = glm::vec4(v[0], v[1], v[2], v[3]);
     //     vertices.push_back(val);
     // }
-}
-
-void Mesh::fillVec4FromAccessor(cgltf_accessor* acc, std::vector<glm::vec4>& vertices) {
-    cgltf_buffer_view* view = acc->buffer_view;
-    cgltf_buffer* buf = view->buffer;
-
-    uint8_t* raw_data = (uint8_t*)buf->data
-                        + view->offset
-                        + acc->offset;
-
-    int component_count = cgltf_num_components(acc->type);
-    int component_size = cgltf_component_size(acc->component_type);
-    int stride = acc->stride ? acc->stride : component_count * component_size;
-
-    for (int i = 0; i < acc->count; i++)
-    {
-        float* v = (float*)(raw_data + i * stride);
-        glm::vec4 val = glm::vec4(v[0], v[1], v[2], v[3]);
-        vertices.push_back(val);
-    }
 }
 
 void Mesh::filliVec4FromAccessor(cgltf_accessor* acc, std::vector<glm::ivec4>& vertices) {

@@ -32,9 +32,9 @@ public:
     glm::mat4 m_constParentTransform = glm::mat4(1.0);
 
     // methods here to interpolate
-    glm::mat4 interpolateScale(float timestep, float duration);
-    glm::mat4 interpolateRotate(float timestep, float duration);
-    glm::mat4 interpolateTranslate(float timestep, float duration);
+    glm::vec3 interpolateScale(float timestep, float duration);
+    glm::quat interpolateRotate(float timestep, float duration);
+    glm::vec3 interpolateTranslate(float timestep, float duration);
     int searchInKeyframeQuat(float timestep, std::vector<KeyframeQuaternion>& find);
     int searchInKeyframeVec3(float timestep, std::vector<KeyframeVec3>& find);
     float interpolateFactor(float prevTime, float nextTime, float timestep, float duration);
@@ -77,4 +77,5 @@ private:
     void filliVec4FromAccessor(cgltf_accessor* acc, std::vector<glm::ivec4>& vertices);
     glm::mat4 transformForBone(int bone, float timestep);
     glm::mat4 getLocalTransformPreprocessing(cgltf_node* node);
+    glm::mat4 getMatrixFromTRS(glm::vec3 t, glm::quat r, glm::vec3 s);
 };
