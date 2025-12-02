@@ -50,7 +50,7 @@ I also referenced the following resources from the final features list: https://
 
 I used the [cgltf](https://github.com/jkuhlmann/cgltf/blob/master/cgltf.h#L604) header-only library to help with loading the files, and the [glTF documentation](https://github.khronos.org/glTF-Tutorials/) for clarifications. 
 
-I got the models above from [this free pack](https://www.cgtrader.com/free-3d-models/animals/mammal/animals-free).
+I got the models above from [this free pack](https://www.cgtrader.com/free-3d-models/animals/mammal/animals-free). I used Blender to apply the given animations and export as glb.
 
 ### Known Bugs
 
