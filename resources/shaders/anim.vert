@@ -35,12 +35,18 @@ void main() {
         }
         temp_pos[3] = 1.0;
         // do normal next
+        temp_normal = (weights[0] * finalBoneMatrices[int(joints[0])]
+                + weights[0] * finalBoneMatrices[int(joints[0])]
+                + weights[0] * finalBoneMatrices[int(joints[0])]
+                + weights[0] * finalBoneMatrices[int(joints[0])]) * temp_normal;
     }
 
 
     vec4 new_pos = vec4(model * temp_pos);
 
     world_position = new_pos.xyz;
+
+
     vec4 new_norm = (model_inv_trans * temp_normal);
     new_norm.w = 0;
     new_norm = normalize(new_norm);

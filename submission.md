@@ -14,7 +14,7 @@ Test Case 1: Mesh from glb file loads correctly
 
 Test Case 2: Mesh from glb file loads correctly in scene with other primitives/meshes
 
-Test Case 3: Lighting and such effects are still applied correctly (normals are correct)
+Test Case 3: Lighting and such effects are still applied correctly (lighting looks correct -> right normals applied)
 
 Kinematic Skeletons + Linear Blend Skinning - 4 stars (2 each)
 
@@ -24,7 +24,7 @@ Test Case 2: Two models with simultaneous different animations
 
 Test Case 3: Mesh with skeleton but no animation loads correctly
 
-Test Case 4: Normals for animated mesh still look correct (wasn't sure how to compare this one so I just zoomed in)
+Test Case 4: Normals for animated mesh still look right (wasn't sure how to compare this one so I just zoomed in)
 
 ### Design Choices
 

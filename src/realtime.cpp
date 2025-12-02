@@ -328,21 +328,6 @@ void Realtime::timerEvent(QTimerEvent *event) {
             if (meshval.m_meshAnim.m_currentTime >= meshval.m_meshAnim.m_animation.m_duration) {
                 meshval.m_meshAnim.m_currentTime = 0.0;
             }
-
-            // glUseProgram(m_shader);
-            // int num = meshval.m_meshAnim.m_finalBoneMatrices.size();
-            // float finalMatrices[num*16];
-            // for (int i = 0; i < num; i++) {
-            //     for (int j = 0; j < 16; j++) {
-            //         finalMatrices[16*i + j] = meshval.m_meshAnim.m_finalBoneMatrices[i][j/4][j%4]; // check thisline because i made it up completely
-            //         // std::cout << finalMatrices[16*i + j] << " ";
-            //     }
-            //     // std::cout << std::endl;
-            // }
-            // glUniform1i(glGetUniformLocation(m_shader, "numBones"), num);
-            // glUniformMatrix4fv(glGetUniformLocation(m_shader, "finalBoneMatrices"), num, GL_FALSE, finalMatrices);
-
-            // glUseProgram(0);
         }
     }
 
