@@ -103,8 +103,6 @@ void Realtime::paintGL() {
     // for each shape: bind vao, decl shape uniforms, draw, unbind, repeat
     for (RenderShapeData &shape: m_renderdata.shapes) {
         animating = 0;
-        // Task 16: Bind your VAO here
-        // glBindVertexArray(m_vao);
         switch (shape.primitive.type) {
         case PrimitiveType::PRIMITIVE_CONE:
             vertices = m_cone->num_triangles;
@@ -148,7 +146,6 @@ void Realtime::paintGL() {
         glUniformMatrix4fv(glGetUniformLocation(m_shader, "finalBoneMatrices"), num, GL_FALSE, finalMatrices);
         }
 
-        // Task 17: Draw your VAO here
         glDrawArrays(GL_TRIANGLES, 0, vertices);
 
         glBindVertexArray(0);
@@ -204,7 +201,7 @@ void Realtime::settingsChanged() {
     if (m_shader != 0 && (settings.nearPlane != near || settings.farPlane != far)) {
         rebuildMatrices();
         glUseProgram(m_shader);
-        declareCameraUniforms(); // do i need to anymore
+        declareCameraUniforms(); // maybe not needed
         glUseProgram(0);
     }
     update(); // asks for a PaintGL() call to occur

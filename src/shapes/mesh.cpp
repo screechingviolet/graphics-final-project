@@ -57,7 +57,6 @@ glm::vec3 Bone::interpolateScale(float timestep, float duration) {
     float factor = interpolateFactor(m_scale[idx].time, m_scale[nextIdx].time, timestep, duration);
     glm::vec3 scaling = glm::mix(m_scale[idx].transform, m_scale[nextIdx].transform, factor);
     return scaling;
-    // return glm::scale(glm::mat4(1.0f), scaling);
 }
 
 glm::quat Bone::interpolateRotate(float timestep, float duration) {
@@ -67,11 +66,8 @@ glm::quat Bone::interpolateRotate(float timestep, float duration) {
     int nextIdx = (idx + 1)%m_rotate.size(); // plus the value mod the value to get safe index
     float factor = interpolateFactor(m_rotate[idx].time, m_rotate[nextIdx].time, timestep, duration);
 
-    // uses teh wrogn order (Need to load transforms in glm format?)
-    // convert transform to glm format, then slerp, then convert back before returning
     glm::quat rotation = glm::slerp(m_rotate[idx].transform, m_rotate[nextIdx].transform, factor);
     return rotation; // normalize?
-    // return glm::toMat4(glm::normalize(rotation));
 }
 
 glm::vec3 Bone::interpolateTranslate(float timestep, float duration) {
@@ -82,7 +78,6 @@ glm::vec3 Bone::interpolateTranslate(float timestep, float duration) {
     float factor = interpolateFactor(m_translate[idx].time, m_translate[nextIdx].time, timestep, duration);
     glm::vec3 translation = glm::mix(m_translate[idx].transform, m_translate[nextIdx].transform, factor);
     return translation;
-    // return glm::translate(glm::mat4(1.0f), translation);
 }
 
 void Mesh::updateMesh(std::string meshfile) {
@@ -133,7 +128,7 @@ void Mesh::setVertexData(const char* meshfile) {
             indices.clear();
 
             for (int j = 0; j < prim->attributes_count; j++) {
-                std::cout << "ATTR: " << prim->attributes[j].name << "\n";
+                // std::cout << "ATTR: " << prim->attributes[j].name << "\n";
                 switch (prim->attributes[j].type) {
                 case cgltf_attribute_type_position:
                     pos_acc = prim->attributes[j].data;
@@ -265,7 +260,7 @@ void Mesh::setVertexData(const char* meshfile) {
             // now fill in parents
             for (int i = 0; i < m_meshAnim.m_animation.m_allBones.size(); i++) {
                 if (tempNodeToIdx.count(skin->joints[i]->parent) == 0) {
-                    std::cout << "found root!" << skin->joints[i] << " " << skin->joints[i]->parent << std::endl;
+                    // std::cout << "found root!" << skin->joints[i] << " " << skin->joints[i]->parent << std::endl;
                     // there is some kind of parent node that has its own transform
                 } else m_meshAnim.m_animation.m_allBones[i].parent = tempNodeToIdx[skin->joints[i]->parent];
                 // turn this into a function that takes a cgltf_node* and returns its bonetransform
@@ -282,7 +277,7 @@ void Mesh::setVertexData(const char* meshfile) {
                 // std::cout << "are equal: " << glm::to_string(m_meshAnim.m_animation.m_allBones[i].m_constParentTransform * m_meshAnim.m_animation.m_allBones[i].m_boneTransform) << "\n" <<  glm::to_string(glm::inverse(m_meshAnim.m_animation.m_allBones[i].m_toBoneSpace)) << '\n';
             }
 
-            std::cout << "animations" << data->animations_count << std::endl;
+            std::cout << "animations " << data->animations_count << std::endl;
             if (data->animations_count == 0) {
                 // be sad and leave
                 // hasAnimation = false;
@@ -297,7 +292,7 @@ void Mesh::setVertexData(const char* meshfile) {
                 for (int i = 0; i < main_anim->channels_count; i++) {
                     // std::cerr << i << std::endl;
                     curr = tempNodeToIdx[main_anim->channels[i].target_node];
-                    std::cerr << main_anim->channels[i].sampler->interpolation << " type\n";
+                    // std::cerr << main_anim->channels[i].sampler->interpolation << " type\n";
                     switch (main_anim->channels[i].target_path) {
                     case cgltf_animation_path_type_translation:
                         time_acc = main_anim->channels[i].sampler->input;
