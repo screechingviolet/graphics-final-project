@@ -51,6 +51,12 @@ void Realtime::finish() {
     delete m_cylinderIds;
     delete m_coneIds;
 
+    for (int i = 0; i < m_postprocesses.size(); i++) {
+        m_postprocesses[i]->destroyFBO();
+        glDeleteProgram(m_postprocesses[i]->getShader());
+        m_postprocesses[i]->destroyVertex();
+    }
+
     this->doneCurrent();
 }
 
@@ -89,9 +95,12 @@ void Realtime::initializeGL() {
     buildGeometry();
 
     rebuildMeshes();
+
+    // postprocessing pipeline initialization
+    m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
 }
 
-void Realtime::paintGL() {
+void Realtime::paintScene() {
     // Students: anything requiring OpenGL calls every frame should be done here
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -135,15 +144,15 @@ void Realtime::paintGL() {
         glUniform1i(glGetUniformLocation(m_shader, "animating"), animating);
 
         if (animating) {
-        int num = m_meshes[shape.primitive.meshfile].m_meshAnim.m_finalBoneMatrices.size();
-        float finalMatrices[num*16];
-        for (int i = 0; i < num; i++) {
-            for (int j = 0; j < 16; j++) {
-                finalMatrices[16*i + j] = m_meshes[shape.primitive.meshfile].m_meshAnim.m_finalBoneMatrices[i][j/4][j%4];
+            int num = m_meshes[shape.primitive.meshfile].m_meshAnim.m_finalBoneMatrices.size();
+            float finalMatrices[num*16];
+            for (int i = 0; i < num; i++) {
+                for (int j = 0; j < 16; j++) {
+                    finalMatrices[16*i + j] = m_meshes[shape.primitive.meshfile].m_meshAnim.m_finalBoneMatrices[i][j/4][j%4];
+                }
             }
-        }
-        glUniform1i(glGetUniformLocation(m_shader, "numBones"), num);
-        glUniformMatrix4fv(glGetUniformLocation(m_shader, "finalBoneMatrices"), num, GL_FALSE, finalMatrices);
+            glUniform1i(glGetUniformLocation(m_shader, "numBones"), num);
+            glUniformMatrix4fv(glGetUniformLocation(m_shader, "finalBoneMatrices"), num, GL_FALSE, finalMatrices);
         }
 
         glDrawArrays(GL_TRIANGLES, 0, vertices);
@@ -155,9 +164,36 @@ void Realtime::paintGL() {
     glUseProgram(0);
 }
 
+void Realtime::paintGL() {
+    if (m_postprocesses.size() == 0) {
+        paintScene();
+        return;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[0]->getFramebuffer());
+    glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
+    paintScene();
+
+    for (int i = 1; i < m_postprocesses.size(); i++) {
+        glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[i]->getFramebuffer());
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        m_postprocesses[i-1]->paintTexture();
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_postprocesses[m_postprocesses.size()-1]->paintTexture();
+
+}
+
 void Realtime::resizeGL(int w, int h) {
     // Tells OpenGL how big the screen is
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
+    for (int i = 0; i < m_postprocesses.size(); i++) {
+        m_postprocesses[i]->destroyFBO();
+        m_postprocesses[i]->updateRes(size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
+        m_postprocesses[i]->makeFBO();
+    }
 
     // Students: anything requiring OpenGL calls when the program starts should be done here
 }

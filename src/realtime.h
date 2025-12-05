@@ -1,6 +1,9 @@
 #pragma once
 
 // Defined before including GLEW to suppress deprecation messages on macOS
+#include "postprocessing/postprocess.h"
+#include "postprocessing/colorgrade.h"
+#include "postprocessing/convolution.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #endif
@@ -51,6 +54,7 @@ public slots:
 
 protected:
     void initializeGL() override;                       // Called once at the start of the program
+    void paintScene();
     void paintGL() override;                            // Called whenever the OpenGL context changes or by an update() request
     void resizeGL(int width, int height) override;      // Called when window size changes
 
@@ -97,6 +101,10 @@ private:
 
     std::unordered_map<std::string, Mesh> m_meshes;
     std::unordered_map<std::string, VboVao> m_meshIds;
+
+    //postprocessing
+    std::vector<std::unique_ptr<PostProcess>> m_postprocesses;
+
 
 
 
