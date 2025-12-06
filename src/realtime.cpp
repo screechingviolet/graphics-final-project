@@ -94,7 +94,7 @@ void Realtime::initializeGL() {
     }
 
     buildGeometry();
-    initializeTextures();
+
 
     rebuildMeshes();
 
@@ -235,6 +235,7 @@ void Realtime::resizeGL(int w, int h) {
 void Realtime::sceneChanged() {
     makeCurrent();
     SceneParser::parse(settings.sceneFilePath, m_renderdata);
+    initializeTextures(settings.sceneFilePath);
     rebuildCamera();
     rebuildMatrices();
     rebuildMeshes();

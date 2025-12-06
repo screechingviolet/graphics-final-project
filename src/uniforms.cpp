@@ -153,9 +153,10 @@ void Realtime::rebuildMatrices() {
 }
 
 
-void Realtime::initializeTextures() {
+void Realtime::initializeTextures(std::string filepath) {
     m_textures.resize(1);
-    std::filesystem::path basepath = std::filesystem::path("/Users/aanyaagrawalsantiair/Desktop/CompSci/Brown_CS/cs_classes/CSCI1230/proj5-screechingviolet/scenefiles/realtime/extra_credit/texture_tests/texture_cone.json").parent_path().parent_path();
+    std::cout << "base filepath " << filepath << std::endl;
+    std::filesystem::path basepath = std::filesystem::path(filepath).parent_path(); // .parent_path();
     std::filesystem::path fileRelativePath("textures/Texture_1.png");
 
     // Prepare filepath

@@ -48,7 +48,7 @@ public:
     void deleteAllMeshes();
     void rebuildMeshes();
     void buildGeometry();
-    void initializeTextures();
+    void initializeTextures(std::string filepath);
     void setupSkybox();
     void drawSkybox();
     // void paintTextures();
