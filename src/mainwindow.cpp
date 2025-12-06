@@ -188,6 +188,11 @@ void MainWindow::initialize() {
     vLayout->addWidget(ec3);
     vLayout->addWidget(ec4);
 
+    // camera paths stuff
+    cameraPathButton = new QPushButton();
+    cameraPathButton->setText("Start Camera Path");
+    vLayout->addWidget(cameraPathButton);
+
     connectUIElements();
 
     // Set default values of 5 for tesselation parameters
@@ -215,6 +220,9 @@ void MainWindow::connectUIElements() {
     connectNear();
     connectFar();
     connectExtraCredit();
+
+    connectCameraPath();
+
 }
 
 
@@ -225,6 +233,10 @@ void MainWindow::connectUIElements() {
 // void MainWindow::connectKernelBasedFilter() {
 //     connect(filter2, &QCheckBox::clicked, this, &MainWindow::onKernelBasedFilter);
 // }
+
+void MainWindow::connectCameraPath() {
+    connect(cameraPathButton, &QPushButton::clicked, this, &MainWindow::onCameraPath);
+}
 
 void MainWindow::connectUploadFile() {
     connect(uploadFile, &QPushButton::clicked, this, &MainWindow::onUploadFile);
@@ -274,6 +286,18 @@ void MainWindow::connectExtraCredit() {
 //     settings.kernelBasedFilter = !settings.kernelBasedFilter;
 //     realtime->settingsChanged();
 // }
+
+void MainWindow::onCameraPath() {
+    realtime->activateCameraPath({
+        std::vector<Keyframe>{
+            Keyframe{PosRot{glm::vec3{12, 1.5, 0}, glm::quat{glm::vec3{0.f, 1.2f, 0.f}}}, 0.f},
+            Keyframe{PosRot{glm::vec3{12, 3.5, 2}, glm::quat{glm::vec3{-0.2f, 1.57f, 0.05f}}}, 3.f},
+            Keyframe{PosRot{glm::vec3{12, 1.5, 4}, glm::quat{glm::vec3{0.0f, 1.8f, 0.f}}}, 4.f},
+            Keyframe{PosRot{glm::vec3{12, -0.5, 6}, glm::quat{glm::vec3{0.2f, 1.57f, -0.05f}}}, 5.f},
+            Keyframe{PosRot{glm::vec3{12, 1.5, 8}, glm::quat{glm::vec3{0.f, 1.2f, 0.f}}}, 7.f},
+        }
+    });
+}
 
 void MainWindow::onUploadFile() {
     // Get abs path of scene file

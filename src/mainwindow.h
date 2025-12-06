@@ -56,6 +56,10 @@ private:
     QCheckBox *ec3;
     QCheckBox *ec4;
 
+    // camera paths
+    QPushButton *cameraPathButton;
+    void connectCameraPath();
+
 private slots:
     // From old Project 6
     // void onPerPixelFilter();
@@ -75,4 +79,8 @@ private slots:
     void onExtraCredit2();
     void onExtraCredit3();
     void onExtraCredit4();
+
+    // camera paths
+    void onCameraPath();
+
 };

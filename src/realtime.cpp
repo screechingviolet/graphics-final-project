@@ -125,6 +125,17 @@ void Realtime::paintScene() {
     drawSkybox();
     glUseProgram(m_shader);
 
+    if (m_cameraPath != std::nullopt) {
+        std::optional<PosRot> pathPosRot = m_cameraPath->get(getPathTime());
+        if (pathPosRot == std::nullopt) {
+            m_cameraPath = std::nullopt;
+        }
+        else {
+            updateCameraFromPath(*pathPosRot);
+            declareCameraUniforms();
+        }
+    }
+
     GLuint vertices;
     int animating;
     bool usingTexture;
@@ -277,6 +288,36 @@ void Realtime::settingsChanged() {
     }
     update(); // asks for a PaintGL() call to occur
     // if nearPlane or farPlane changed update camera settings
+}
+
+// ================== Camera Paths!
+void Realtime::activateCameraPath(CameraPath cameraPath) {
+    m_cameraPath = cameraPath;
+    m_pathStartTime = std::chrono::high_resolution_clock::now();
+}
+
+float Realtime::getPathTime() {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = now - m_pathStartTime;;
+    return elapsed.count();
+}
+
+void Realtime::updateCameraFromPath(PosRot posRot) {
+    m_cam.pos = glm::vec4(posRot.pos, 1);
+    glm::mat4 trans = {glm::vec4(1.f, 0.f, 0.f, 0.f),
+                       glm::vec4(0.f, 1.f, 0.f, 0.f),
+                       glm::vec4(0.f, 0.f, 1.f, 0.f),
+                       glm::vec4(-glm::vec3(m_cam.pos), 1.f)};
+    glm::mat4 inv_trans = {glm::vec4(1.f, 0.f, 0.f, 0.f),
+                           glm::vec4(0.f, 1.f, 0.f, 0.f),
+                           glm::vec4(0.f, 0.f, 1.f, 0.f),
+                           glm::vec4(glm::vec3(m_cam.pos), 1.f)};
+
+    glm::mat4 inv_rot = glm::toMat4(posRot.rot);
+    glm::mat4 rot = glm::inverse(inv_rot);
+
+    m_cam.view = rot * trans;
+    m_cam.viewInv = inv_trans * inv_rot;
 }
 
 // ================== Camera Movement!

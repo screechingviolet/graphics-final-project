@@ -1,6 +1,7 @@
 #pragma once
 
 // Defined before including GLEW to suppress deprecation messages on macOS
+#include "camerapaths/camerapath.h"
 #include "postprocessing/postprocess.h"
 #include "postprocessing/colorgrade.h"
 #include "postprocessing/convolution.h"
@@ -53,6 +54,8 @@ public:
     void drawSkybox();
     // void paintTextures();
     glm::mat4 rotationhelper(glm::vec4 u, float angle);
+    void activateCameraPath(CameraPath cameraPath);
+
 
 public slots:
     void tick(QTimerEvent* event);                      // Called once per tick of m_timer
@@ -158,5 +161,11 @@ private:
       -1.0f, -1.0f,  1.0f,
       1.0f, -1.0f,  1.0f
     };
+
+    // camera paths
+    std::chrono::high_resolution_clock::time_point m_pathStartTime;
+    float getPathTime();
+    std::optional<CameraPath> m_cameraPath; // camera path, if one is active
+    void updateCameraFromPath(PosRot posRot);
 
 };
