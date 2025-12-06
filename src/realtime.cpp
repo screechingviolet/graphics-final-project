@@ -84,14 +84,8 @@ void Realtime::initializeGL() {
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
 
     // ------ my code starts here -----
-
-    // Students: anything requiring OpenGL calls when the program starts should be done here
-
-    // Task 4: Set the clear color here
     glClearColor(0, 0, 0, 1.0);
 
-    // Shader setup (DO NOT EDIT)
-    // m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/anim.vert", ":/resources/shaders/anim.frag");
     m_skybox_shader = ShaderLoader::createShaderProgram(":/resources/shaders/skybox.vert", ":/resources/shaders/skybox.frag");
 
@@ -105,7 +99,7 @@ void Realtime::initializeGL() {
     rebuildMeshes();
 
     // postprocessing pipeline initialization
-    m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    // m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
 }
 
 void Realtime::drawSkybox() {
@@ -125,15 +119,10 @@ void Realtime::drawSkybox() {
     glDepthMask(GL_TRUE);
 }
 
-// void Realtime::paintGL() {
 
 void Realtime::paintScene() {
-    // Students: anything requiring OpenGL calls every frame should be done here
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     drawSkybox();
-
-    // Bind the shader
     glUseProgram(m_shader);
 
     GLuint vertices;
@@ -175,17 +164,18 @@ void Realtime::paintScene() {
             break;
         }
 
+        // TEXTURING
         glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture); // depends on individual mesh
-
-        // Task 10: Bind "texture" to slot 0
         if (usingTexture) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, m_textures[0]);
         }
 
+        // GEOMETRY
         declSpecificUniforms(shape);
-        glUniform1i(glGetUniformLocation(m_shader, "animating"), animating);
 
+        // ANIMATION
+        glUniform1i(glGetUniformLocation(m_shader, "animating"), animating);
         if (animating) {
             int num = m_meshes[shape.primitive.meshfile].m_meshAnim.m_finalBoneMatrices.size();
             float finalMatrices[num*16];
@@ -198,14 +188,13 @@ void Realtime::paintScene() {
             glUniformMatrix4fv(glGetUniformLocation(m_shader, "finalBoneMatrices"), num, GL_FALSE, finalMatrices);
         }
 
+        // DRAWING
         glDrawArrays(GL_TRIANGLES, 0, vertices);
 
+        // UNBINDING
         glBindTexture(GL_TEXTURE_2D, 0);
-
         glBindVertexArray(0);
     }
-
-    // Unbind the shader
     glUseProgram(0);
 }
 
