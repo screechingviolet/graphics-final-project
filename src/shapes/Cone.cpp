@@ -7,6 +7,11 @@ void Cone::updateParams(int param1, int param2) {
     setVertexData();
 }
 
+void Cone::addCapUV(glm::vec3 pos) {
+    m_vertexData.push_back(pos.x+0.5);
+    m_vertexData.push_back(pos.z+0.5);
+}
+
 void Cone::makeCapTile(glm::vec3 topLeft,
                        glm::vec3 topRight,
                        glm::vec3 bottomLeft,
@@ -16,17 +21,24 @@ void Cone::makeCapTile(glm::vec3 topLeft,
     glm::vec3 normal = glm::normalize(glm::cross(topLeftToBottomLeft, topLeftToTopRight));
     insertVec3(m_vertexData, topLeft);
     insertVec3(m_vertexData, normal);
+    addCapUV(topLeft);
     insertVec3(m_vertexData, bottomLeft);
     insertVec3(m_vertexData, normal);
+    addCapUV(bottomLeft);
     insertVec3(m_vertexData, bottomRight);
     insertVec3(m_vertexData, normal);
+    addCapUV(bottomRight);
+
 
     insertVec3(m_vertexData, topLeft);
     insertVec3(m_vertexData, normal);
+    addCapUV(topLeft);
     insertVec3(m_vertexData, bottomRight);
     insertVec3(m_vertexData, normal);
+    addCapUV(bottomRight);
     insertVec3(m_vertexData, topRight);
     insertVec3(m_vertexData, normal);
+    addCapUV(topRight);
 }
 
 void Cone::makeCapSlice(float currentTheta, float nextTheta) {
@@ -42,10 +54,13 @@ void Cone::makeCapSlice(float currentTheta, float nextTheta) {
     glm::vec3 normal = glm::normalize(glm::cross(firstTopLeft-center, firstTopRight-center));
     insertVec3(m_vertexData, firstTopRight);
     insertVec3(m_vertexData, normal);
+    addCapUV(firstTopRight);
     insertVec3(m_vertexData, center);
     insertVec3(m_vertexData, normal);
+    addCapUV(center);
     insertVec3(m_vertexData, firstTopLeft);
     insertVec3(m_vertexData, normal);
+    addCapUV(firstTopLeft);
 
     float rad = step;
     for (int i = 0; i < m_param1-1; i++) { // float rad = step; rad < m_radius; rad += step
@@ -67,23 +82,39 @@ glm::vec3 Cone::calcNorm(glm::vec3& pt) {
     return glm::normalize(glm::vec3{ xNorm, yNorm, zNorm });
 }
 
+void Cone::addSlopeUV(glm::vec3 pos) {
+    float u, v;
+    v = pos.y + 0.5;
+    float angle = atan2(pos.z, pos.x);
+    if (angle < 0) u = -angle/(2*M_PI);
+    else u = 1 - (angle/(2*M_PI));
+    m_vertexData.push_back(u);
+    m_vertexData.push_back(v);
+}
+
 void Cone::makeSlopeTile(glm::vec3 topLeft,
                          glm::vec3 topRight,
                          glm::vec3 bottomLeft,
                          glm::vec3 bottomRight) {
     insertVec3(m_vertexData, topLeft);
     insertVec3(m_vertexData, calcNorm(topLeft));
+    addSlopeUV(topLeft);
     insertVec3(m_vertexData, bottomLeft);
     insertVec3(m_vertexData, calcNorm(bottomLeft));
+    addSlopeUV(bottomLeft);
     insertVec3(m_vertexData, bottomRight);
     insertVec3(m_vertexData, calcNorm(bottomRight));
+    addSlopeUV(bottomRight);
 
     insertVec3(m_vertexData, topLeft);
     insertVec3(m_vertexData, calcNorm(topLeft));
+    addSlopeUV(topLeft);
     insertVec3(m_vertexData, bottomRight);
     insertVec3(m_vertexData, calcNorm(bottomRight));
+    addSlopeUV(bottomRight);
     insertVec3(m_vertexData, topRight);
     insertVec3(m_vertexData, calcNorm(topRight));
+    addSlopeUV(topRight);
 }
 
 void Cone::makeSlopeSlice(float currentTheta, float nextTheta) {
@@ -98,10 +129,13 @@ void Cone::makeSlopeSlice(float currentTheta, float nextTheta) {
     glm::vec3 baseTop2 = bottomRight+(float)(m_param1-1)*goingUpFromRight;
     insertVec3(m_vertexData, baseTop);
     insertVec3(m_vertexData, calcNorm(baseTop));
+    addSlopeUV(baseTop);
     insertVec3(m_vertexData, topPoint);
     insertVec3(m_vertexData, glm::normalize((calcNorm(bottomRight)+calcNorm(bottomLeft))/2.f));
+    addSlopeUV(topPoint);
     insertVec3(m_vertexData, baseTop2);
     insertVec3(m_vertexData, calcNorm(baseTop2));
+    addSlopeUV(baseTop2);
 
     for (int i = 0; i < m_param1-1; i++) {
         makeSlopeTile(bottomLeft+(float)i*goingUpFromLeft, bottomRight+(float)i*goingUpFromRight,
@@ -118,7 +152,7 @@ void Cone::setVertexData() {
         makeSlopeSlice(theta, theta+thetaStep);
     }
 
-    num_triangles = m_vertexData.size()/6;
+    num_triangles = m_vertexData.size()/8;
 }
 
 

@@ -65,6 +65,7 @@ public:
     std::vector<float> generateShape() { return m_vertexData; }
     int num_triangles = 0;
     bool hasAnimation = false;
+    bool hasTextures = false;
     AnimState m_meshAnim;
     void updateFinalBoneMatrices(float timestep);
 
@@ -75,6 +76,7 @@ private:
     void fillVec3FromAccessor(cgltf_accessor* acc, std::vector<glm::vec3>& vertices);
     void fillVec4FromAccessor(cgltf_accessor* acc, std::vector<glm::vec4>& vertices);
     void filliVec4FromAccessor(cgltf_accessor* acc, std::vector<glm::ivec4>& vertices);
+    void fillVec2FromAccessor(cgltf_accessor* acc, std::vector<glm::vec2>& vertices);
     glm::mat4 transformForBone(int bone, float timestep);
     glm::mat4 getLocalTransformPreprocessing(cgltf_node* node);
     glm::mat4 getMatrixFromTRS(glm::vec3 t, glm::quat r, glm::vec3 s);

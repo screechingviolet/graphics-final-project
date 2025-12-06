@@ -38,12 +38,17 @@ public:
     void declGeneralUniforms();
     void declSpecificUniforms(RenderShapeData& shape);
     void declareCameraUniforms();
+    void declareSkyboxUniforms();
     void rebuildMatrices();
     void rebuildCamera();
-    void setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles, bool anim = false);
+    void setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles, bool anim = false, bool texturing = false);
     void deleteAllMeshes();
     void rebuildMeshes();
     void buildGeometry();
+    void initializeTextures();
+    void setupSkybox();
+    void drawSkybox();
+    // void paintTextures();
     glm::mat4 rotationhelper(glm::vec4 u, float angle);
 
 public slots:
@@ -75,7 +80,7 @@ private:
     double m_devicePixelRatio;
 
     GLuint m_shader = 0; // Stores id of shader program
-    GLuint m_shaderAnim = 0;
+    GLuint m_skybox_shader = 0;
     RenderData m_renderdata;
     // GLuint m_vbo;    // Stores id of VBO
     // GLuint m_vao;    // Stores id of VAO
@@ -98,6 +103,54 @@ private:
     std::unordered_map<std::string, Mesh> m_meshes;
     std::unordered_map<std::string, VboVao> m_meshIds;
 
+    std::vector<GLuint> m_textures;
+    GLuint m_skybox;
 
+    GLuint m_skybox_vbo_id = 0, m_skybox_vao_id = 0;
+    int m_skybox_size = 1;
+    // FROM LEARN_OPENGL
+    float m_skybox_vbo[108] = {
+      -1.0f,  1.0f, -1.0f,
+      -1.0f, -1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f,
+      1.0f,  1.0f, -1.0f,
+      -1.0f,  1.0f, -1.0f,
+
+      -1.0f, -1.0f,  1.0f,
+      -1.0f, -1.0f, -1.0f,
+      -1.0f,  1.0f, -1.0f,
+      -1.0f,  1.0f, -1.0f,
+      -1.0f,  1.0f,  1.0f,
+      -1.0f, -1.0f,  1.0f,
+
+      1.0f, -1.0f, -1.0f,
+      1.0f, -1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f,
+
+      -1.0f, -1.0f,  1.0f,
+      -1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,
+      1.0f, -1.0f,  1.0f,
+      -1.0f, -1.0f,  1.0f,
+
+      -1.0f,  1.0f, -1.0f,
+      1.0f,  1.0f, -1.0f,
+      1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,
+      -1.0f,  1.0f,  1.0f,
+      -1.0f,  1.0f, -1.0f,
+
+      -1.0f, -1.0f, -1.0f,
+      -1.0f, -1.0f,  1.0f,
+      1.0f, -1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f,
+      -1.0f, -1.0f,  1.0f,
+      1.0f, -1.0f,  1.0f
+    };
 
 };

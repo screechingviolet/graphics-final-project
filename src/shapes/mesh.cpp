@@ -84,8 +84,8 @@ void Mesh::updateMesh(std::string meshfile) {
     m_vertexData.clear();
 
     setVertexData(meshfile.c_str());
-    num_triangles = m_vertexData.size()/6;
-    if (hasAnimation) num_triangles = m_vertexData.size()/14;
+    num_triangles = m_vertexData.size()/(6 + ((hasAnimation) ? 8 : 0) + ((hasTextures) ? 2 : 0));
+    // if (hasAnimation) num_triangles = m_vertexData.size()/14;
     std::cout << num_triangles << std::endl;
 }
 
@@ -102,6 +102,7 @@ void Mesh::setVertexData(const char* meshfile) {
     cgltf_result result = cgltf_parse_file(&options, meshfile, &data);
     std::vector<glm::vec3> vertices_temp, normals_temp;
     std::vector<glm::vec4> weights_temp;
+    std::vector<glm::vec2> tex_temp;
     std::vector<glm::ivec4> joints_temp;
     std::vector<int> indices;
     if (result == cgltf_result_success)
@@ -120,7 +121,7 @@ void Mesh::setVertexData(const char* meshfile) {
             skin = &data->skins[0];
         }
         cgltf_primitive* prim;
-        cgltf_accessor *pos_acc = nullptr, *norm_acc = nullptr, *joints_acc = nullptr, *weights_acc = nullptr;
+        cgltf_accessor *pos_acc = nullptr, *norm_acc = nullptr, *joints_acc = nullptr, *weights_acc = nullptr, *tex_acc = nullptr;
         for (int i = 0; i < mesh->primitives_count; i++) {
             prim = &mesh->primitives[i];
             vertices_temp.clear();
@@ -136,6 +137,9 @@ void Mesh::setVertexData(const char* meshfile) {
                 case cgltf_attribute_type_normal:
                     norm_acc = prim->attributes[j].data;
                     break;
+                case cgltf_attribute_type_texcoord:
+                    tex_acc = prim->attributes[j].data;
+                    hasTextures = true;
                 case cgltf_attribute_type_joints:
                     joints_acc = prim->attributes[j].data;
                     break;
@@ -149,6 +153,7 @@ void Mesh::setVertexData(const char* meshfile) {
 
             fillVec3FromAccessor(pos_acc, vertices_temp);
             fillVec3FromAccessor(norm_acc, normals_temp);
+            if (hasTextures) fillVec2FromAccessor(tex_acc, tex_temp);
             if (joints_acc != nullptr && weights_acc != nullptr && skin != nullptr) {
                 hasAnimation = true;
                 std::cout << "Found animation skeleton\n";
@@ -195,12 +200,18 @@ void Mesh::setVertexData(const char* meshfile) {
             auto push_vertex = [&](int i) {
                 const glm::vec3& p = vertices_temp[i];
                 const glm::vec3& n = normals_temp[i];
+
                 m_vertexData.push_back(p.x);
                 m_vertexData.push_back(p.y);
                 m_vertexData.push_back(p.z);
                 m_vertexData.push_back(n.x);
                 m_vertexData.push_back(n.y);
                 m_vertexData.push_back(n.z);
+                if (hasTextures) {
+                    const glm::vec2& t = tex_temp[i];
+                    m_vertexData.push_back(t.x);
+                    m_vertexData.push_back(t.y);
+                }
                 if (hasAnimation) {
                     const glm::vec4& joint = joints_temp[i];
                     const glm::vec4& weight = weights_temp[i];
@@ -457,6 +468,16 @@ void Mesh::filliVec4FromAccessor(cgltf_accessor* acc, std::vector<glm::ivec4>& v
         bool res = cgltf_accessor_read_uint(acc, i, v, 4);
         if (res == false) std::cout << "oops did not work\n";
         glm::ivec4 val = glm::ivec4(v[0], v[1], v[2], v[3]);
+        vertices.push_back(val);
+    }
+}
+
+void Mesh::fillVec2FromAccessor(cgltf_accessor* acc, std::vector<glm::vec2>& vertices) {
+    for (int i = 0; i < acc->count; i++) {
+        cgltf_float v[2];
+        bool res = cgltf_accessor_read_float(acc, i, v, 2);
+        if (res == false) std::cout << "filling vec2 failed\n";
+        glm::vec2 val = glm::vec2(v[0], v[1]);
         vertices.push_back(val);
     }
 }

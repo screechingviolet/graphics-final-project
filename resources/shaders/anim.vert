@@ -2,11 +2,13 @@
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
-layout(location = 2) in vec4 joints; // changed from ivec
-layout(location = 3) in vec4 weights;
+layout(location = 2) in vec2 texcoords;
+layout(location = 3) in vec4 joints; // changed from ivec
+layout(location = 4) in vec4 weights;
 
 out vec3 world_position;
 out vec3 world_normal;
+out vec2 uv_coord;
 
 uniform mat4 model;
 uniform mat4 model_inv_trans;
@@ -16,10 +18,11 @@ uniform mat4 proj;
 uniform mat4 finalBoneMatrices[100];
 uniform int animating;
 uniform int numBones;
+uniform bool usingTexture;
 
 void main() {
     // compute the world-space position and normal, then pass them to the fragment shader
-
+    if (usingTexture) uv_coord = texcoords;
 
     vec4 temp_pos = vec4(position, 1.0);
     vec4 temp_normal = vec4(normal, 0.0);

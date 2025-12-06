@@ -9,6 +9,7 @@
 
 bool SceneParser::parse(std::string filepath, RenderData &renderData) {
     ScenefileReader fileReader = ScenefileReader(filepath);
+    std::cout << "here's the filepath" << filepath << std::endl;
     bool success = fileReader.readJSON();
     if (!success) {
         return false;

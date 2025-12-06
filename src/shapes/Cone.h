@@ -24,7 +24,8 @@ private:
                        glm::vec3 bottomRight);
     void makeSlopeSlice(float currentTheta, float nextTheta);
     glm::vec3 calcNorm(glm::vec3& pt);
-
+    void addSlopeUV(glm::vec3 pos);
+    void addCapUV(glm::vec3 pos);
 
 
     std::vector<float> m_vertexData;

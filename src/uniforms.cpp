@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QString>
 #include <iostream>
 #include "settings.h"
 #include "utils/shaderloader.h"
@@ -17,6 +18,15 @@ void Realtime::declareCameraUniforms() {
 
     GLint loc_cam_pos = glGetUniformLocation(m_shader, "camPos");
     glUniform4fv(loc_cam_pos, 1, &m_cam.pos[0]); // general
+}
+
+void Realtime::declareSkyboxUniforms() {
+    glUniform1i(glGetUniformLocation(m_skybox_shader, "skybox_txt"), 15);
+
+    glm::mat4 view_temp = glm::mat4(glm::mat3(m_cam.view));
+    glUniformMatrix4fv(glGetUniformLocation(m_skybox_shader, "view"), 1, GL_FALSE, &view_temp[0][0]);
+
+    glUniformMatrix4fv(glGetUniformLocation(m_skybox_shader, "proj"), 1, GL_FALSE, &m_proj[0][0]);
 }
 
 void Realtime::declGeneralUniforms() { // how often do i do this - every vao/vbo drawn
@@ -77,6 +87,8 @@ void Realtime::declSpecificUniforms(RenderShapeData& shape) { // is it bad to pa
     // --- SHAPE DATA ---
     GLint loc_shiny = glGetUniformLocation(m_shader, "shininess");
     glUniform1f(loc_shiny, shape.primitive.material.shininess); // material specific
+
+    glUniform1f(glGetUniformLocation(m_shader, "blend"), shape.primitive.material.blend);
 
     GLint loc_model = glGetUniformLocation(m_shader, "model");
     glUniformMatrix4fv(loc_model, 1, GL_FALSE, &shape.ctm[0][0]); // shape ctm
@@ -139,3 +151,89 @@ void Realtime::rebuildMatrices() {
                        0, 0, -1.f, 1.f) * unhinging * scaling;
 
 }
+
+
+void Realtime::initializeTextures() {
+    m_textures.resize(1);
+    std::filesystem::path basepath = std::filesystem::path("/Users/aanyaagrawalsantiair/Desktop/CompSci/Brown_CS/cs_classes/CSCI1230/proj5-screechingviolet/scenefiles/realtime/extra_credit/texture_tests/texture_cone.json").parent_path().parent_path();
+    std::filesystem::path fileRelativePath("textures/Texture_1.png");
+
+    // Prepare filepath
+    QString tex_filepath = QString((basepath/fileRelativePath).string().c_str());
+    std::cout << (basepath / fileRelativePath).string() << std::endl;
+
+    // Task 1: Obtain image from filepath
+    QImage image = QImage(tex_filepath);
+
+    if (image.isNull()) std::cout << "No such image\n";
+
+    // Task 2: Format image to fit OpenGL
+    image = image.convertToFormat(QImage::Format_RGBA8888).mirrored();
+
+    // Task 3: Generate texture
+    glGenTextures(1, &m_textures[0]);
+
+    // Task 9: Set the active texture slot to texture slot 0
+    glActiveTexture(GL_TEXTURE0);
+
+    // Task 4: Bind texture
+    glBindTexture(GL_TEXTURE_2D, m_textures[0]);
+
+    // Task 5: Load image into texture
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+
+    // Task 6: Set min and mag filters' interpolation mode to linear
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Task 7: Unbind texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // SKYBOX
+
+    glGenTextures(1, &m_skybox);
+    glActiveTexture(GL_TEXTURE15);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox);
+
+    std::vector<std::filesystem::path> skyboxpaths = {
+        "textures/Daylight Box_Right.bmp",
+        "textures/Daylight Box_Left.bmp",
+        "textures/Daylight Box_Top.bmp",
+        "textures/Daylight Box_Bottom.bmp",
+        "textures/Daylight Box_Front.bmp",
+        "textures/Daylight Box_Back.bmp"
+    };
+
+    for (int i = 0; i < 6; i++) {
+        image = QImage((basepath / skyboxpaths[i]).string().c_str());
+        image = image.convertToFormat(QImage::Format_RGBA8888); // .mirrored();
+        if (image.isNull()) std::cout << "Failed to fetch skybox\n";
+        else std::cout << "Fetched skybox\n";
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // END SKYBOX
+
+    glUseProgram(m_skybox_shader);
+    declareSkyboxUniforms();
+    glUseProgram(0);
+
+    // Task 10: Set the texture.frag uniform for our texture
+    glUseProgram(m_shader);
+    glUniform1i(glGetUniformLocation(m_shader, "txt"), 0);
+    glUseProgram(0);
+
+
+}
+
+
+

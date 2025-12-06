@@ -50,6 +50,7 @@ void Realtime::finish() {
     delete m_cubeIds;
     delete m_cylinderIds;
     delete m_coneIds;
+    glDeleteProgram(m_shader);
 
     this->doneCurrent();
 }
@@ -86,38 +87,69 @@ void Realtime::initializeGL() {
     // Shader setup (DO NOT EDIT)
     // m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/anim.vert", ":/resources/shaders/anim.frag");
+    m_skybox_shader = ShaderLoader::createShaderProgram(":/resources/shaders/skybox.vert", ":/resources/shaders/skybox.frag");
+
+    for (int i = 0; i < 108; i++) {
+        m_skybox_vbo[i] *= m_skybox_size;
+    }
+
     buildGeometry();
+    initializeTextures();
 
     rebuildMeshes();
+}
+
+void Realtime::drawSkybox() {
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    glUseProgram(m_skybox_shader);
+    declareSkyboxUniforms();
+
+    glBindVertexArray(m_skybox_vao_id);
+    glActiveTexture(GL_TEXTURE15);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+    glUseProgram(0);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
 }
 
 void Realtime::paintGL() {
     // Students: anything requiring OpenGL calls every frame should be done here
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    drawSkybox();
+
     // Bind the shader
     glUseProgram(m_shader);
 
     GLuint vertices;
     int animating;
+    bool usingTexture;
     // for each shape: bind vao, decl shape uniforms, draw, unbind, repeat
     for (RenderShapeData &shape: m_renderdata.shapes) {
         animating = 0;
         switch (shape.primitive.type) {
         case PrimitiveType::PRIMITIVE_CONE:
             vertices = m_cone->num_triangles;
+            usingTexture = shape.primitive.material.textureMap.isUsed;
             glBindVertexArray(m_coneIds->shape_vao);
             break;
         case PrimitiveType::PRIMITIVE_CUBE:
             vertices = m_cube->num_triangles;
+            usingTexture = shape.primitive.material.textureMap.isUsed;
             glBindVertexArray(m_cubeIds->shape_vao);
             break;
         case PrimitiveType::PRIMITIVE_CYLINDER:
             vertices = m_cylinder->num_triangles;
+            usingTexture = shape.primitive.material.textureMap.isUsed;
             glBindVertexArray(m_cylinderIds->shape_vao);
             break;
         case PrimitiveType::PRIMITIVE_SPHERE:
             vertices = m_sphere->num_triangles;
+            usingTexture = shape.primitive.material.textureMap.isUsed;
             glBindVertexArray(m_sphereIds->shape_vao);
             break;
         default:
@@ -128,7 +160,16 @@ void Realtime::paintGL() {
                 glBindVertexArray(m_meshIds[shape.primitive.meshfile].shape_vao);
             }
             if (m_meshes[shape.primitive.meshfile].hasAnimation) animating = 1;
+            usingTexture = m_meshes[shape.primitive.meshfile].hasTextures;
             break;
+        }
+
+        glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture); // depends on individual mesh
+
+        // Task 10: Bind "texture" to slot 0
+        if (usingTexture) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, m_textures[0]);
         }
 
         declSpecificUniforms(shape);
@@ -147,6 +188,8 @@ void Realtime::paintGL() {
         }
 
         glDrawArrays(GL_TRIANGLES, 0, vertices);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         glBindVertexArray(0);
     }
@@ -190,7 +233,7 @@ void Realtime::settingsChanged() {
 
     if (m_coneIds->shape_vao != 0 && m_coneIds->shape_vbo != 0) {
         m_cone->updateParams(settings.shapeParameter1, settings.shapeParameter2);
-        setupPrimitives(m_coneIds, m_cone->generateShape());
+        setupPrimitives(m_coneIds, m_cone->generateShape(), false, true);
     }
 
     if (m_cylinderIds->shape_vao != 0 && m_cylinderIds->shape_vbo != 0) {

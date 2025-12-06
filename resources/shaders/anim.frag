@@ -2,6 +2,7 @@
 
 in vec3 world_position;
 in vec3 world_normal;
+in vec2 uv_coord;
 
 out vec4 fragColor;
 
@@ -19,11 +20,16 @@ uniform float lightPenumbras[8];
 uniform float ks;
 uniform vec4 camPos;
 uniform float shininess;
+uniform float blend;
 uniform vec3 shapeColorA;
 uniform vec3 shapeColorD;
 uniform vec3 shapeColorS;
 
+uniform sampler2D txt;
+uniform bool usingTexture;
+
 void main() {
+    // texture(txt, uv_coord);
     fragColor = vec4(0.0);
     vec4 surfaceToLight, reflectionvec;
     float constantsdiffuse, constantsspecular;
@@ -36,6 +42,7 @@ void main() {
     fragColor[0] += ka*shapeColorA[0];
     fragColor[1] += ka*shapeColorA[1];
     fragColor[2] += ka*shapeColorA[2];
+    vec4 temp_tex;
 
     for (int i = 0; i < 8; i++) {
         if (i >= lightsNum) continue;
@@ -68,10 +75,18 @@ void main() {
             f_att = min(1., 1./(lightFunctions[i].x + dist * lightFunctions[i].y + lightFunctions[i].z * (dist*dist)));
         }
 
-        constantsdiffuse = inten * f_att * max(dot(norm, surfaceToLight), 0.f) * kd;
-        fragColor[0] += constantsdiffuse * lightColors[i].r * shapeColorD[0];
-        fragColor[1] += constantsdiffuse * lightColors[i].g * shapeColorD[1];
-        fragColor[2] += constantsdiffuse * lightColors[i].b * shapeColorD[2];
+        constantsdiffuse = inten * f_att * max(dot(norm, surfaceToLight), 0.f);
+        if (usingTexture) {
+            temp_tex = texture(txt, uv_coord);
+            fragColor[0] += lightColors[i].r * constantsdiffuse * (blend*(temp_tex[0]) + (1-blend)*(kd * shapeColorD[0]));
+            fragColor[1] += lightColors[i].g * constantsdiffuse * (blend*(temp_tex[1]) + (1-blend)*(kd * shapeColorD[1]));
+            fragColor[2] += lightColors[i].b * constantsdiffuse * (blend*(temp_tex[2]) + (1-blend)*(kd * shapeColorD[2]));
+
+        } else {
+        fragColor[0] += kd * constantsdiffuse * lightColors[i].r * shapeColorD[0];
+        fragColor[1] += kd * constantsdiffuse * lightColors[i].g * shapeColorD[1];
+        fragColor[2] += kd * constantsdiffuse * lightColors[i].b * shapeColorD[2];
+        }
 
         reflectionvec = -normalize(surfaceToLight - (2. * (dot(surfaceToLight, norm)) * (norm)));
         float dotprod = dot(directionToCamera, reflectionvec);
