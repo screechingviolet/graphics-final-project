@@ -95,7 +95,6 @@ void Realtime::initializeGL() {
 
     buildGeometry();
 
-
     rebuildMeshes();
 
     // postprocessing pipeline initialization

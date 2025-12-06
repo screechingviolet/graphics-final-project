@@ -110,6 +110,35 @@ private:
     std::unordered_map<std::string, Mesh> m_meshes;
     std::unordered_map<std::string, VboVao> m_meshIds;
 
+    // L-System Details
+    std::vector<SceneNode*> m_LSystems;
+    RenderData m_LSystemMetaData;
+    float m_LSystemScaler;
+    float m_LSystemScaleProgression;
+    float m_LSystemIterations;
+    bool m_LSystemIterationsChanged;
+    std::map<QChar, QString> m_rules;
+    QString m_axiom;
+    float m_angle = (5.0 / 36.0) * M_PI;
+
+    // Particle Details
+    int m_numParticles;
+    int m_maxNumParticles;
+    std::vector<Particle> m_particles;
+    float m_dt;
+    GLuint m_particleShader;
+    GLuint m_vboParticlesBillboard;
+    GLuint m_vboParticlesPositionSize;
+    GLuint m_vboParticlesColor;
+    GLuint m_vboParticlesUV;
+    GLuint m_vaoParticles;
+    int m_lastUsedParticle = 0;
+    std::vector<GLfloat> m_particleVertexData;
+    std::vector<GLfloat> m_particulePositionSizeData;
+    std::vector<GLfloat> m_particuleColorData;
+    glm::mat4 m_particleCtm;
+    float m_particleVelocityGlobal;
+
     std::vector<GLuint> m_textures;
     GLuint m_skybox;
     //postprocessing
