@@ -1,6 +1,9 @@
 #pragma once
 
 // Defined before including GLEW to suppress deprecation messages on macOS
+#include "postprocessing/postprocess.h"
+#include "postprocessing/colorgrade.h"
+#include "postprocessing/convolution.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #endif
@@ -56,6 +59,7 @@ public slots:
 
 protected:
     void initializeGL() override;                       // Called once at the start of the program
+    void paintScene();
     void paintGL() override;                            // Called whenever the OpenGL context changes or by an update() request
     void resizeGL(int width, int height) override;      // Called when window size changes
 
@@ -105,6 +109,8 @@ private:
 
     std::vector<GLuint> m_textures;
     GLuint m_skybox;
+    //postprocessing
+    std::vector<std::unique_ptr<PostProcess>> m_postprocesses;
 
     GLuint m_skybox_vbo_id = 0, m_skybox_vao_id = 0;
     int m_skybox_size = 1;

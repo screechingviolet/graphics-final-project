@@ -38,10 +38,32 @@ public:
     int searchInKeyframeQuat(float timestep, std::vector<KeyframeQuaternion>& find);
     int searchInKeyframeVec3(float timestep, std::vector<KeyframeVec3>& find);
     float interpolateFactor(float prevTime, float nextTime, float timestep, float duration);
+
+    Bone(int index,
+         const std::vector<KeyframeVec3>& translate,
+         const std::vector<KeyframeQuaternion>& rotate,
+         const std::vector<KeyframeVec3>& scale,
+         const glm::mat4& toBoneSpace,
+         int parentIdx)
+        : m_index(index),
+        m_translate(translate),
+        m_rotate(rotate),
+        m_scale(scale),
+        m_toBoneSpace(toBoneSpace),
+        parent(parentIdx),
+        m_boneTransform(1.0f),
+        m_constParentTransform(1.0f)
+    {}
 };
 
 class Anim {
 public:
+    Anim()
+        : m_duration(0), m_allBones()
+    {}
+    Anim(float duration, std::vector<Bone> allBones)
+        : m_duration(duration), m_allBones(allBones)
+    {}
     float m_duration;
     // int m_ticksPerSec;
     std::vector<Bone> m_allBones;
@@ -56,6 +78,25 @@ public:
     Anim m_animation;
     float m_currentTime;
     float m_deltaTime;
+    AnimState()
+        : m_finalBoneMatrices(),
+        m_visited(),
+        m_animation(),
+        m_currentTime(0.0f),
+        m_deltaTime(0.0f)
+    {}
+
+    AnimState(std::vector<glm::mat4> finalBones,
+              std::vector<bool> visited,
+              Anim animation,
+              float currentTime,
+              float deltaTime)
+        : m_finalBoneMatrices(std::move(finalBones)),
+        m_visited(std::move(visited)),
+        m_animation(std::move(animation)),
+        m_currentTime(currentTime),
+        m_deltaTime(deltaTime)
+    {}
 };
 
 class Mesh

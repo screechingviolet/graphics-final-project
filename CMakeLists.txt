@@ -47,6 +47,10 @@ add_executable(${PROJECT_NAME}
     src/shapes/mesh.h src/shapes/mesh.cpp
     src/uniforms.cpp
     src/geometry.cpp
+    src/postprocessing/postprocess.h src/postprocessing/postprocess.cpp
+    src/postprocessing/colorgrade.h src/postprocessing/colorgrade.cpp
+    src/postprocessing/convolution.h src/postprocessing/convolution.cpp
+
 
 
 )
@@ -79,6 +83,25 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
         resources/shaders/anim.vert
         resources/shaders/skybox.frag
         resources/shaders/skybox.vert
+        resources/shaders/colorgrading.frag
+        resources/shaders/texture.vert
+
+        resources/images/test_lut_2.png
+        resources/images/test_lut_2_8bit.png
+        resources/images/vintage_warmth.png
+        resources/images/autocontrast.png
+        resources/images/color_swap.png
+        resources/images/color_swap_2.png
+        resources/images/dark.png
+        resources/images/doom.png
+        resources/images/doom_old.png
+        resources/images/grayscale.png
+        resources/images/grayscale_no_sat.png
+        resources/images/greeny.png
+        resources/images/green_neon.png
+        resources/images/inverted.png
+        resources/images/sepia.png
+        resources/images/identity.png
 )
 
 # GLEW: this provides support for Windows (including 64-bit)
