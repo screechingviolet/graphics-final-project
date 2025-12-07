@@ -55,6 +55,7 @@ public:
     // void paintTextures();
     glm::mat4 rotationhelper(glm::vec4 u, float angle);
     void activateCameraPath(CameraPath cameraPath);
+    void setupLSystems();
 
 
 public slots:
@@ -124,7 +125,7 @@ private:
     // Particle Details
     int m_numParticles;
     int m_maxNumParticles;
-    std::vector<Particle> m_particles;
+    //std::vector<Particle> m_particles;
     float m_dt;
     GLuint m_particleShader;
     GLuint m_vboParticlesBillboard;
