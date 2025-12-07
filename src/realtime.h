@@ -63,7 +63,9 @@ public:
     QString generateLSystemString(std::map<QChar, QString> rules, QString axiom, int numIterations);
     SceneNode* createLSystemNode(QString data);
     SceneNode* createLSystemNodeHelper(QString data, float localScale, float angle);
-
+    void updateLSystems();
+    void paintLSystems();
+    void paintParticles();
 
 public slots:
     void tick(QTimerEvent* event);                      // Called once per tick of m_timer
