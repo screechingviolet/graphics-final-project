@@ -234,7 +234,7 @@ void Realtime::paintScene() {
     for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
         //Shininess and ctm uniforms depends on specific shape
         // Task 6: pass in m_model as a uniform into the shader program
-        GLint modelLocation = glGetUniformLocation(m_shader, "modelMatrix");
+        GLint modelLocation = glGetUniformLocation(m_shader, "model");
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, &m_LSystemMetaData.shapes[i].ctm[0][0]);
         GLint shininessLocation = glGetUniformLocation(m_shader, "m_shininess");
         glUniform1f(shininessLocation, m_LSystemMetaData.shapes[i].primitive.material.shininess);
