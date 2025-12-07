@@ -94,7 +94,6 @@ void Realtime::initializeGL() {
     }
 
     buildGeometry();
-
     rebuildMeshes();
 
     // postprocessing pipeline initialization
@@ -205,6 +204,9 @@ void Realtime::paintScene() {
         glBindTexture(GL_TEXTURE_2D, 0);
         glBindVertexArray(0);
     }
+
+
+
     glUseProgram(0);
 }
 

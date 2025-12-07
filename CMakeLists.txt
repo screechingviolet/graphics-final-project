@@ -51,6 +51,9 @@ add_executable(${PROJECT_NAME}
     src/postprocessing/colorgrade.h src/postprocessing/colorgrade.cpp
     src/postprocessing/convolution.h src/postprocessing/convolution.cpp
     src/camerapaths/camerapath.h src/camerapaths/camerapath.cpp
+    src/shapes/Particle.h
+    src/utils/miscutilities.h
+    src/utils/miscutilities.cpp
 
 
 

@@ -6,6 +6,7 @@
 #include <iostream>
 #include "settings.h"
 #include "utils/shaderloader.h"
+#include <glm/gtx/transform.hpp>
 
 void Realtime::buildGeometry() {
     glGenBuffers(1, &m_sphereIds->shape_vbo);
@@ -28,9 +29,149 @@ void Realtime::buildGeometry() {
     m_cylinder->updateParams(settings.shapeParameter1, settings.shapeParameter2);
     setupPrimitives(m_cylinderIds, m_cylinder->generateShape(), false, false);
 
-    setupSkybox();
+    setupLSystems();
+    setupParticles();
 
+    setupSkybox();
 }
+
+void Realtime::setupLSystems() {
+    Cylinder unitCylinder;
+    unitCylinder.updateParams(2, 3);
+    m_LcylinderData = unitCylinder.generateShape();
+
+    // Generate, and bind vao
+    glGenVertexArrays(1, &m_vaoLcylinder);
+    glBindVertexArray(m_vaoLcylinder);
+    // Generate and bind VBO
+    glGenBuffers(1, &m_vboLcylinder);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vboLcylinder);
+
+    // Send data to VBO
+    glBufferData(GL_ARRAY_BUFFER, m_LcylinderData.size() * sizeof(GLfloat), m_LcylinderData.data(), GL_STATIC_DRAW);
+
+    // Enable and define attribute 0 to store vertex positions
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void *>(0));
+
+    // Enable and define attribute 1 to store normals
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void *>(sizeof(GLfloat) * 3));
+
+    // Clean-up bindings
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Create L System Data
+    m_LSystemScaler = 1;
+    m_LSystemScaleProgression = 1;
+    m_LSystemIterations = 3;
+    m_axiom = "X";
+    m_rules['X'] = "F+[[X]-X]-F[-FX]+X";
+    m_rules['F'] = "FF";
+}
+
+void Realtime::setupParticles() {
+    m_dt = 0.01;
+    m_numParticles = 0;
+    m_maxNumParticles = 100;
+
+    // Initialise Particles
+    for (unsigned int i = 0; i < m_maxNumParticles; ++i) {
+        m_particles.push_back(Particle(glm::vec3(0, 0, 0)));
+
+        for (int j = 0; j < 4; j++) {
+            m_particulePositionSizeData.push_back(0);
+        }
+
+        for (int j = 0; j < 3; j++) {
+            m_particuleColorData.push_back(0);
+        }
+    }
+
+    m_particleCtm = glm::translate(glm::vec3(0, 0, 0));
+    //m_particleCtm = glm::scale(glm::vec3(5, 5, 5));
+
+    // The VBO containing the 4 vertices of the particles.
+    // Thanks to instancing, they will be shared by all particles.
+    m_particleVertexData = {
+        -0.5f, -0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f,
+        -0.5f, 0.5f, 0.0f,
+        0.5f, 0.5f, 0.0f,
+    };
+
+    // Billboard
+    glGenVertexArrays(1, &m_vaoParticles);
+    glBindVertexArray(m_vaoParticles);
+
+    glGenBuffers(1, &m_vboParticlesBillboard);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vboParticlesBillboard);
+
+    glBufferData(GL_ARRAY_BUFFER, m_particleVertexData.size() * sizeof(GLfloat), m_particleVertexData.data(), GL_STATIC_DRAW);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(
+        2, // attribute. must match the layout in the shader.
+        3, // size
+        GL_FLOAT, // type
+        GL_FALSE, // normalized?
+        3 * sizeof(GLfloat), // stride
+        //0, // stride
+        (void*)0 // array buffer offset
+        );
+    glVertexAttribDivisor(2, 0);
+
+    // Positions and sizes of the particles
+    glGenBuffers(1, &m_vboParticlesPositionSize);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vboParticlesPositionSize);
+
+    // Initialize with empty (NULL) buffer : it will be updated later, each frame.
+    glBufferData(GL_ARRAY_BUFFER, m_maxNumParticles * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(
+        3, // attribute. No particular reason for 3, but must match the layout in the shader.
+        4, // size : x + y + z + size => 4
+        GL_FLOAT, // type
+        GL_FALSE, // normalized?
+        4 * sizeof(GLfloat), // stride
+        //0, // stride
+        (void*)0 // array buffer offset
+        );
+    glVertexAttribDivisor(3, 1);
+
+    // Colors of the particles
+    glGenBuffers(1, &m_vboParticlesColor);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vboParticlesColor);
+
+    // Initialize with empty (NULL) buffer : it will be updated later, each frame.
+    glBufferData(GL_ARRAY_BUFFER, m_maxNumParticles * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(
+        4, // attribute. No particular reason for 4, but must match the layout in the shader.
+        4, // size : r + g + b + a => 4
+        GL_UNSIGNED_BYTE, // type
+        GL_TRUE, // normalized? *** YES, this means that the unsigned char[4] will be accessible with a vec4 (floats) in the shader ***
+        4 * sizeof(GLfloat), // stride
+        //0, // stride
+        (void*)0 // array buffer offset
+        );
+    glVertexAttribDivisor(4, 1);
+
+    std::vector<GLfloat> uvData = {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        0.0f, 1.0f,
+        1.0f, 1.0f
+    };
+
+    glGenBuffers(1, &m_vboParticlesUV);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vboParticlesUV);
+
+    glBufferData(GL_ARRAY_BUFFER, uvData.size() * sizeof(GLfloat), uvData.data(), GL_STATIC_DRAW);
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+}
+
 
 void Realtime::setupSkybox() {
     glGenBuffers(1, &m_skybox_vbo_id);

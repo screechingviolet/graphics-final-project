@@ -24,6 +24,7 @@
 #include <shapes/Cone.h>
 #include <shapes/Cylinder.h>
 #include <shapes/mesh.h>
+#include <shapes/particle.h>
 
 
 struct VboVao {
@@ -56,6 +57,7 @@ public:
     glm::mat4 rotationhelper(glm::vec4 u, float angle);
     void activateCameraPath(CameraPath cameraPath);
     void setupLSystems();
+    void setupParticles();
 
 
 public slots:
@@ -121,11 +123,14 @@ private:
     std::map<QChar, QString> m_rules;
     QString m_axiom;
     float m_angle = (5.0 / 36.0) * M_PI;
+    GLuint m_vboLcylinder;
+    GLuint m_vaoLcylinder;
+    std::vector<GLfloat> m_LcylinderData;
 
     // Particle Details
     int m_numParticles;
     int m_maxNumParticles;
-    //std::vector<Particle> m_particles;
+    std::vector<Particle> m_particles;
     float m_dt;
     GLuint m_particleShader;
     GLuint m_vboParticlesBillboard;
