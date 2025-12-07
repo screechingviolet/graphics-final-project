@@ -24,7 +24,7 @@
 #include <shapes/Cone.h>
 #include <shapes/Cylinder.h>
 #include <shapes/mesh.h>
-#include <shapes/particle.h>
+#include <particles.h>
 
 
 struct VboVao {
@@ -58,6 +58,11 @@ public:
     void activateCameraPath(CameraPath cameraPath);
     void setupLSystems();
     void setupParticles();
+    void particleUpdate();
+    int FindUnusedParticle();
+    QString generateLSystemString(std::map<QChar, QString> rules, QString axiom, int numIterations);
+    SceneNode* createLSystemNode(QString data);
+    SceneNode* createLSystemNodeHelper(QString data, float localScale, float angle);
 
 
 public slots:

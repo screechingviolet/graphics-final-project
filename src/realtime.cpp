@@ -6,6 +6,7 @@
 #include <iostream>
 #include "settings.h"
 #include "utils/shaderloader.h"
+#include <glm/gtx/transform.hpp>
 
 
 // ================== Rendering the Scene!
@@ -86,8 +87,10 @@ void Realtime::initializeGL() {
     // ------ my code starts here -----
     glClearColor(0, 0, 0, 1.0);
 
+
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/anim.vert", ":/resources/shaders/anim.frag");
     m_skybox_shader = ShaderLoader::createShaderProgram(":/resources/shaders/skybox.vert", ":/resources/shaders/skybox.frag");
+    m_particleShader = ShaderLoader::createShaderProgram(":/resources/shaders/particles.vert", ":/resources/shaders/particles.frag");
 
     for (int i = 0; i < 108; i++) {
         m_skybox_vbo[i] *= m_skybox_size;
@@ -95,6 +98,7 @@ void Realtime::initializeGL() {
 
     buildGeometry();
     rebuildMeshes();
+    sceneChanged();
 
     // postprocessing pipeline initialization
     // m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
@@ -205,7 +209,52 @@ void Realtime::paintScene() {
         glBindVertexArray(0);
     }
 
+    glBindVertexArray(m_vaoLcylinder);
 
+    //In case you updated a buffer
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    if (true) {
+        QString output = generateLSystemString(m_rules, m_axiom, m_LSystemIterations);
+        SceneNode *LSystem;
+        LSystem = createLSystemNode(output);
+        //m_LSystems.push_back(&LSystem);
+        m_LSystemMetaData.shapes.clear();
+        glm::mat4 identityMat(1.0f);
+        SceneParser::parseRecursive(m_LSystemMetaData, LSystem, identityMat);
+
+        for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
+            //m_LSystemMetaData.shapes[i].ctm *= glm::translate(glm::vec3(-4, -1, 4));
+            m_LSystemMetaData.shapes[i].ctm *= glm::scale(m_LSystemScaler * glm::vec3(0.15, 1, 0.15));
+        }
+
+        m_LSystemIterationsChanged = false;
+    }
+
+    for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
+        //Shininess and ctm uniforms depends on specific shape
+        // Task 6: pass in m_model as a uniform into the shader program
+        GLint modelLocation = glGetUniformLocation(m_shader, "modelMatrix");
+        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, &m_LSystemMetaData.shapes[i].ctm[0][0]);
+        GLint shininessLocation = glGetUniformLocation(m_shader, "m_shininess");
+        glUniform1f(shininessLocation, m_LSystemMetaData.shapes[i].primitive.material.shininess);
+
+        // Shape-specific colours
+        GLint cAmbientLocation = glGetUniformLocation(m_shader, "cAmbient");
+        GLint cDiffuseLocation = glGetUniformLocation(m_shader, "cDiffuse");
+        GLint cSpecularLocation = glGetUniformLocation(m_shader, "cSpecular");
+        glm::vec4 ambient = m_LSystemMetaData.shapes[i].primitive.material.cAmbient;
+        glm::vec4 diffuse = m_LSystemMetaData.shapes[i].primitive.material.cDiffuse;
+        glm::vec4 specular = m_LSystemMetaData.shapes[i].primitive.material.cSpecular;
+        glUniform4f(cAmbientLocation, ambient[0], ambient[1], ambient[2], ambient[3]);
+        glUniform4f(cDiffuseLocation, diffuse[0], diffuse[1], diffuse[2], diffuse[3]);
+        glUniform4f(cSpecularLocation, specular[0], specular[1], specular[2], specular[3]);
+
+        // Draw Command
+        std::cout << "size of data" << m_LcylinderData.size() << std::endl;
+        glDrawArrays(GL_TRIANGLES, 0, m_LcylinderData.size() / 6);
+
+    }
 
     glUseProgram(0);
 }
@@ -246,8 +295,11 @@ void Realtime::resizeGL(int w, int h) {
 
 void Realtime::sceneChanged() {
     makeCurrent();
-    SceneParser::parse(settings.sceneFilePath, m_renderdata);
-    initializeTextures(settings.sceneFilePath);
+    std::string filepath = "scenefiles/realtime/extra_credit/finalscene.json";
+    SceneParser::parse(filepath, m_renderdata);
+    //SceneParser::parse("/Users/lightspark/Documents/CS1230/graphics-final-project/scenefiles/realtime/extra_credit/finalscene.json", m_renderdata);
+    //initializeTextures(settings.sceneFilePath);
+    initializeTextures(filepath);
     rebuildCamera();
     rebuildMatrices();
     rebuildMeshes();

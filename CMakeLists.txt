@@ -51,9 +51,12 @@ add_executable(${PROJECT_NAME}
     src/postprocessing/colorgrade.h src/postprocessing/colorgrade.cpp
     src/postprocessing/convolution.h src/postprocessing/convolution.cpp
     src/camerapaths/camerapath.h src/camerapaths/camerapath.cpp
-    src/shapes/Particle.h
+
     src/utils/miscutilities.h
     src/utils/miscutilities.cpp
+    src/utils/particles.cpp
+    src/utils/lsystems.cpp
+    src/particles.h
 
 
 
@@ -89,6 +92,8 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
         resources/shaders/skybox.vert
         resources/shaders/colorgrading.frag
         resources/shaders/texture.vert
+	resources/shaders/particles.vert
+	resources/shaders/particles.frag
 
         resources/images/test_lut_2.png
         resources/images/test_lut_2_8bit.png

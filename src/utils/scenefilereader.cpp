@@ -68,6 +68,7 @@ SceneNode *ScenefileReader::getRootNode() const {
 // This is where it all goes down...
 bool ScenefileReader::readJSON() {
     // Read the file
+    //QFile file("");
     QFile file(file_name.c_str());
     if (!file.open(QFile::ReadOnly)) {
         std::cout << "could not open " << file_name << std::endl;
