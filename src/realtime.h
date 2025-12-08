@@ -66,6 +66,8 @@ public:
     void updateLSystems();
     void paintLSystems();
     void paintParticles();
+    void makeFBO();
+    void paintFog();
 
 public slots:
     void tick(QTimerEvent* event);                      // Called once per tick of m_timer
@@ -151,6 +153,16 @@ private:
     std::vector<GLfloat> m_particuleColorData;
     glm::mat4 m_particleCtm;
     float m_particleVelocityGlobal;
+
+    //Fog Details
+    GLuint m_fbo_texture;
+    GLuint m_fbo_depthTexture;
+    GLuint m_fbo_width;
+    GLuint m_fbo_height;
+    GLuint m_fbo_renderbuffer;
+    GLuint m_fbo;
+    GLuint m_defaultFBO;
+    GLuint m_fogShader;
 
     std::vector<GLuint> m_textures;
     GLuint m_skybox;

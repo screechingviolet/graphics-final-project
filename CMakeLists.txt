@@ -57,6 +57,8 @@ add_executable(${PROJECT_NAME}
     src/utils/particles.cpp
     src/utils/lsystems.cpp
     src/particles.h
+    src/postprocessing/fog.cpp
+    src/postprocessing/fog.h
 
 
 
@@ -94,6 +96,8 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
         resources/shaders/texture.vert
 	resources/shaders/particles.vert
 	resources/shaders/particles.frag
+	resources/shaders/fog.vert
+	resources/shaders/fog.frag
 
         resources/images/test_lut_2.png
         resources/images/test_lut_2_8bit.png

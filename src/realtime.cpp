@@ -101,7 +101,7 @@ void Realtime::initializeGL() {
     sceneChanged();
 
     // postprocessing pipeline initialization
-    // m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
 }
 
 void Realtime::drawSkybox() {
@@ -209,6 +209,49 @@ void Realtime::paintParticles() {
     glDepthMask(GL_FALSE);
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, m_numParticles);
     glDepthMask(GL_TRUE);
+}
+
+void Realtime::makeFBO() {
+    // Task 19: Generate and bind an empty texture, set its min/mag filter interpolation, then unbind
+    glGenTextures(1, &m_fbo_depthTexture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_fbo_depthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, m_fbo_width, m_fbo_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // Task 18: Generate and bind an FBO
+    glGenFramebuffers(1, &m_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+
+    // Task 21: Add our texture as a color attachment, and our renderbuffer as a depth+stencil attachment, to our FBO
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fbo_texture, 0);
+    // Attach depth texture instead of renderbuffer
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_fbo_depthTexture, 0);
+
+    // (Optional but recommended if not using stencil)
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Task 22: Unbind the FBO
+    //glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
+}
+
+void Realtime::paintFog() {
+    makeFBO();
+
+    glUseProgram(m_fogShader);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_fbo_texture);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_fbo_depthTexture);
+
+    // Render full-screen triangle/quad
+    //drawFullscreenQuad();
 }
 
 void Realtime::paintScene() {
@@ -323,7 +366,6 @@ void Realtime::paintGL() {
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_postprocesses[m_postprocesses.size()-1]->paintTexture();
-
 }
 
 void Realtime::resizeGL(int w, int h) {
