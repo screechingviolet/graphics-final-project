@@ -1,28 +1,24 @@
 #version 330 core
-//in vec3 worldSpacePosition;
-in vec4 particleColor;
-in vec2 UVCoords;
+in vec2 uv;
 
-out vec4 color;
+uniform sampler2D txt;
+uniform sampler2D depthTexture;
+uniform float density;
 
-uniform sampler2D sprite;
+out vec4 fragColor;
 
 void main()
 {
-    //color = (texture(sprite, TexCoords) * ParticleColor);
-    vec4 p = vec4(Position, 1.0);
-    float d = dot(p, p);
-    float alpha = 1;
+    vec4 sceneColor = texture(txt, uv);
+    float depth = texture(depthTexture, uv).r;
+    float fogMaxDist = 8.0;
+    float fogMinDist = 0.1;
+    vec4  fogColor = vec4(0.4, 0.4, 0.4, 1.0);
 
-    if (d >= 1) {
-        discard;
-    } else if (sqrt(d) >= 0.6) {
-        alpha = 1 - ((sqrt(d) - 0.6) / 0.4);
-    }
+    // Calculate fog
+    float fogFactor = (fogMaxDist - depth) / (fogMaxDist - fogMinDist);
+    fogFactor = clamp(fogFactor, 0.0, 1.0);
 
-    // smooth circular edge
-    //alpha = 1.0 - smoothstep(0.5, 1.0, sqrt(d));
-
-    color = vec4(particleColor.rgb, alpha);
-    //color = vec4(alpha);
+    fragColor = mix(fogColor, sceneColor, fogFactor);
+    fragColor = vec4(depth);
 }

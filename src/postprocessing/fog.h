@@ -8,7 +8,7 @@
 class Fog : public PostProcess
 {
 public:
-    Fog(int density, int width, int height);
+    Fog(float density, int width, int height);
     void paintTexture() override;
     static std::string frag_shader;
 

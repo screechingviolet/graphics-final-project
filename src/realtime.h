@@ -5,6 +5,7 @@
 #include "postprocessing/postprocess.h"
 #include "postprocessing/colorgrade.h"
 #include "postprocessing/convolution.h"
+#include "postprocessing/fog.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #endif
