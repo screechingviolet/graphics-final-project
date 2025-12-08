@@ -10,7 +10,7 @@ uniform sampler2D sprite;
 void main()
 {
     //color = (texture(sprite, TexCoords) * ParticleColor);
-    vec2 p = UVCoords * 2.0 - 1.0;
+    vec4 p = vec4(Position, 1.0);
     float d = dot(p, p);
     float alpha = 1;
 

@@ -7,6 +7,7 @@
 #include "settings.h"
 #include "utils/shaderloader.h"
 #include <glm/gtx/transform.hpp>
+#include "postprocessing/fog.cpp"
 
 
 // ================== Rendering the Scene!
@@ -102,6 +103,7 @@ void Realtime::initializeGL() {
 
     // postprocessing pipeline initialization
     m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    m_postprocesses.push_back(std::make_unique<Fog>(5, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
 }
 
 void Realtime::drawSkybox() {
@@ -357,12 +359,14 @@ void Realtime::paintGL() {
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
     paintScene();
 
+    // Outputs contents of each framebuffer into the next post-process as input
     for (int i = 1; i < m_postprocesses.size(); i++) {
         glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[i]->getFramebuffer());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         m_postprocesses[i-1]->paintTexture();
     }
 
+    // Draws contents of final post-process
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_postprocesses[m_postprocesses.size()-1]->paintTexture();
