@@ -59,10 +59,10 @@ void PostProcess::makeFBO() {
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Task 20: Generate and bind a renderbuffer of the right size, set its format, then unbind
-    glGenRenderbuffers(1, &m_fbo_renderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, m_fbo_renderbuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_fbo_width, m_fbo_height);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    //glGenRenderbuffers(1, &m_fbo_renderbuffer);
+    //glBindRenderbuffer(GL_RENDERBUFFER, m_fbo_renderbuffer);
+    //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_fbo_width, m_fbo_height);
+    //glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 
     // Task 18: Generate and bind an FBO
@@ -71,10 +71,11 @@ void PostProcess::makeFBO() {
 
     // Task 21: Add our texture as a color attachment, and our renderbuffer as a depth+stencil attachment, to our FBO
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fbo_texture, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_fbo_renderbuffer);
+    //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_fbo_renderbuffer);
 
     // Task 22: Unbind the FBO
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    std::cout << "end" << std::endl;
 }
 
 float PostProcess::getTime() {

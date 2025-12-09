@@ -20,5 +20,6 @@ void main()
     fogFactor = clamp(fogFactor, 0.0, 1.0);
 
     fragColor = mix(fogColor, sceneColor, fogFactor);
-    fragColor = vec4(depth);
+    //fragColor = vec4(depth);
+    fragColor = sceneColor;
 }
