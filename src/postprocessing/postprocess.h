@@ -23,9 +23,11 @@ public:
 
     virtual ~PostProcess() {}
 
-private:
+protected:
     int m_fbo_width;
     int m_fbo_height;
+
+private:
     GLuint m_shader;
     GLuint m_fbo;
     GLuint m_fbo_texture;

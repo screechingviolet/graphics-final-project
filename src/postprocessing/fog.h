@@ -18,9 +18,6 @@ private:
     int m_density;
 
     GLuint m_fbo_depthTexture;
-    GLuint m_fbo_width;
-    GLuint m_fbo_height;
-
 };
 
 #endif // FOG_H

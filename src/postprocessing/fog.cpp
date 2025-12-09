@@ -14,7 +14,7 @@ Fog::Fog(float density, int width, int height)
 
     // Task 19: Generate and bind an empty texture, set its min/mag filter interpolation, then unbind
     glGenTextures(1, &m_fbo_depthTexture);
-    glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, m_fbo_depthTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_fbo_width, m_fbo_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -59,24 +59,24 @@ Fog::Fog(float density, int width, int height)
     }
 
     //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_fbo_depthTexture, 0);
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Fog::paintTexture() {
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
+    //glEnable(GL_DEPTH_TEST);
+    //glDepthMask(GL_TRUE);
     glUseProgram(getShader());
     // set the color grading related uniforms
     GLuint density_location = glGetUniformLocation(getShader(), "density");
     glUniform1f(density_location, m_density);
     GLuint depth_texture_location = glGetUniformLocation(getShader(), "depthTexture");
-    glUniform1i(depth_texture_location, 1);
-    glActiveTexture(GL_TEXTURE1);
+    glUniform1i(depth_texture_location, m_fbo_depthTexture);
+    glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, m_fbo_depthTexture);
     glUseProgram(0);
 
     PostProcess::paintTexture();
 
-    glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
