@@ -42,7 +42,7 @@ Colorgrade::Colorgrade(std::string LUT, int num_slices, int width, int height, b
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Task 19: Generate and bind an empty texture, set its min/mag filter interpolation, then unbind
-    glGenTextures(1, &m_fbo_depthTexture);
+    /*glGenTextures(1, &m_fbo_depthTexture);
     glActiveTexture(GL_TEXTURE20);
     glBindTexture(GL_TEXTURE_2D, m_fbo_depthTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
@@ -89,7 +89,7 @@ Colorgrade::Colorgrade(std::string LUT, int num_slices, int width, int height, b
             break;
         }
     }
-
+*/
     //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_fbo_depthTexture, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

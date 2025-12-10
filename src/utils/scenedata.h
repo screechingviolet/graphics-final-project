@@ -91,6 +91,7 @@ struct SceneFileMap {
     SceneFileMap() : isUsed(false) {}
 
     bool isUsed;
+    bool isScrolling;
     std::string filename;
 
     float repeatU;
