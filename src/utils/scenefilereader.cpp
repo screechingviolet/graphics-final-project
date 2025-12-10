@@ -869,6 +869,15 @@ bool ScenefileReader::parsePrimitive(const QJsonObject &prim, SceneNode *node) {
         return false;
     }
 
+    if (prim.contains("texture")) {
+        if (!prim["translate"].isBool()) {
+            std::cout << "primitive texture must be of type bool" << std::endl;
+            return false;
+        }
+        QJsonValue textureBool;
+        primitive->material.textureMap.isUsed = textureBool.toBool();
+    }
+
     if (prim.contains("ambient")) {
         if (!prim["ambient"].isArray()) {
             std::cout << "primitive ambient must be of type array" << std::endl;
@@ -1008,7 +1017,8 @@ bool ScenefileReader::parsePrimitive(const QJsonObject &prim, SceneNode *node) {
         }
         std::filesystem::path fileRelativePath(prim["textureFile"].toString().toStdString());
 
-        mat.textureMap.filename = (basepath / fileRelativePath).string();
+        //mat.textureMap.filename = (basepath / fileRelativePath).string();
+        mat.textureMap.filename = fileRelativePath.string();
         mat.textureMap.repeatU = prim.contains("textureU") && prim["textureU"].isDouble() ? prim["textureU"].toDouble() : 1;
         mat.textureMap.repeatV = prim.contains("textureV") && prim["textureV"].isDouble() ? prim["textureV"].toDouble() : 1;
         mat.textureMap.isUsed = true;

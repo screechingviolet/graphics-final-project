@@ -27,7 +27,7 @@ void Realtime::buildGeometry() {
     glGenBuffers(1, &m_cylinderIds->shape_vbo);
     glGenVertexArrays(1, &m_cylinderIds->shape_vao);
     m_cylinder->updateParams(settings.shapeParameter1, settings.shapeParameter2);
-    setupPrimitives(m_cylinderIds, m_cylinder->generateShape(), false, false);
+    setupPrimitives(m_cylinderIds, m_cylinder->generateShape(), false, true);
 
     setupLSystems();
     setupParticles();
@@ -52,11 +52,11 @@ void Realtime::setupLSystems() {
 
     // Enable and define attribute 0 to store vertex positions
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void *>(0));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), reinterpret_cast<void *>(0));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), reinterpret_cast<void *>(sizeof(GLfloat) * 3));
 
     // Enable and define attribute 1 to store normals
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void *>(sizeof(GLfloat) * 3));
 
     // Clean-up bindings
     glBindVertexArray(0);
@@ -234,6 +234,7 @@ void Realtime::setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& tr
         glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(GLfloat), reinterpret_cast<void*>(12 * sizeof(GLfloat)));
     } else if (texturing) {
         glEnableVertexAttribArray(2);
+        std::cout << "etnered only texturing place\n";
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), reinterpret_cast<void*>(0));
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), reinterpret_cast<void*>(3 * sizeof(GLfloat)));
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), reinterpret_cast<void*>(6 * sizeof(GLfloat)));

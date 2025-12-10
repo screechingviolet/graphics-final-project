@@ -100,6 +100,19 @@
               "diffuse": [0.01, 0.55, 0.03]
             }
           ]
+        },
+        {
+          "translate": [2, -1, 1.7],
+          "scale": [4.0, 2, 3.0],
+          "primitives": [
+            {
+              "type": "cylinder",
+              "diffuse": [0.21, 0.35, 0.93],
+              "textureFile": "textures/water.png",
+              "textureU": 1.0,
+              "textureV": 1.0
+            }
+          ]
         }
       ]
     },

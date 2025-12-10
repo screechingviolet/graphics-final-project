@@ -102,7 +102,7 @@ void Realtime::initializeGL() {
 
     // postprocessing pipeline initialization
     //m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
-    m_postprocesses.push_back(std::make_unique<Fog>(5.0f, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    //m_postprocesses.push_back(std::make_unique<Fog>(5.0f, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
 }
 
 void Realtime::drawSkybox() {
@@ -231,6 +231,9 @@ void Realtime::paintScene() {
     GLuint vertices;
     int animating;
     bool usingTexture;
+
+
+
     // for each shape: bind vao, decl shape uniforms, draw, unbind, repeat
     for (RenderShapeData &shape: m_renderdata.shapes) {
         animating = 0;
@@ -246,6 +249,7 @@ void Realtime::paintScene() {
             glBindVertexArray(m_cubeIds->shape_vao);
             break;
         case PrimitiveType::PRIMITIVE_CYLINDER:
+            //std::cout << "found cylinder" << std::endl;
             vertices = m_cylinder->num_triangles;
             usingTexture = shape.primitive.material.textureMap.isUsed;
             glBindVertexArray(m_cylinderIds->shape_vao);
@@ -270,8 +274,11 @@ void Realtime::paintScene() {
         // TEXTURING
         glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture); // depends on individual mesh
         if (usingTexture) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, m_textures[0]);
+            int texIndex = m_texIndexLUT[shape.primitive.material.textureMap.filename];
+            glUniform1i(glGetUniformLocation(m_shader, "txtIndex"), texIndex); // depends on individual mesh
+
+            glActiveTexture(GL_TEXTURE20 + texIndex);
+            glBindTexture(GL_TEXTURE_2D, m_textures[texIndex]);
         }
 
         // GEOMETRY
@@ -324,6 +331,7 @@ void Realtime::paintGL() {
 
     // Draws contents of final post-process
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+    glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_postprocesses[m_postprocesses.size()-1]->paintTexture();
 }
@@ -346,6 +354,7 @@ void Realtime::sceneChanged() {
     SceneParser::parse(filepath, m_renderdata);
     //SceneParser::parse("/Users/lightspark/Documents/CS1230/graphics-final-project/scenefiles/realtime/extra_credit/finalscene.json", m_renderdata);
     //initializeTextures(settings.sceneFilePath);
+
     initializeTextures(filepath);
     rebuildCamera();
     rebuildMatrices();
@@ -377,7 +386,7 @@ void Realtime::settingsChanged() {
 
     if (m_cylinderIds->shape_vao != 0 && m_cylinderIds->shape_vbo != 0) {
         m_cylinder->updateParams(settings.shapeParameter1, settings.shapeParameter2);
-        setupPrimitives(m_cylinderIds, m_cylinder->generateShape());
+        setupPrimitives(m_cylinderIds, m_cylinder->generateShape(), false, true);
     }
 
     if (m_shader != 0 && (settings.nearPlane != near || settings.farPlane != far)) {

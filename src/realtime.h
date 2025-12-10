@@ -166,6 +166,7 @@ private:
     GLuint m_fogShader;
 
     std::vector<GLuint> m_textures;
+    std::map<std::string, int> m_texIndexLUT;
     GLuint m_skybox;
     //postprocessing
     std::vector<std::unique_ptr<PostProcess>> m_postprocesses;

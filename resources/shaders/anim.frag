@@ -25,8 +25,9 @@ uniform vec3 shapeColorA;
 uniform vec3 shapeColorD;
 uniform vec3 shapeColorS;
 
-uniform sampler2D txt;
+uniform sampler2D txt[8];
 uniform bool usingTexture;
+uniform int txtIndex;
 
 void main() {
     // texture(txt, uv_coord);
@@ -77,15 +78,15 @@ void main() {
 
         constantsdiffuse = inten * f_att * max(dot(norm, surfaceToLight), 0.f);
         if (usingTexture) {
-            temp_tex = texture(txt, uv_coord);
+            temp_tex = texture(txt[txtIndex], uv_coord);
             fragColor[0] += lightColors[i].r * constantsdiffuse * (blend*(temp_tex[0]) + (1-blend)*(kd * shapeColorD[0]));
             fragColor[1] += lightColors[i].g * constantsdiffuse * (blend*(temp_tex[1]) + (1-blend)*(kd * shapeColorD[1]));
             fragColor[2] += lightColors[i].b * constantsdiffuse * (blend*(temp_tex[2]) + (1-blend)*(kd * shapeColorD[2]));
 
         } else {
-        fragColor[0] += kd * constantsdiffuse * lightColors[i].r * shapeColorD[0];
-        fragColor[1] += kd * constantsdiffuse * lightColors[i].g * shapeColorD[1];
-        fragColor[2] += kd * constantsdiffuse * lightColors[i].b * shapeColorD[2];
+            fragColor[0] += kd * constantsdiffuse * lightColors[i].r * shapeColorD[0];
+            fragColor[1] += kd * constantsdiffuse * lightColors[i].g * shapeColorD[1];
+            fragColor[2] += kd * constantsdiffuse * lightColors[i].b * shapeColorD[2];
         }
 
         reflectionvec = -normalize(surfaceToLight - (2. * (dot(surfaceToLight, norm)) * (norm)));
@@ -103,4 +104,11 @@ void main() {
     fragColor.b = min(max(fragColor.b, 0.0), 1.0);
 
     fragColor.a = 1.0;
+
+    if (usingTexture) {
+        temp_tex = texture(txt[txtIndex], uv_coord);
+        fragColor = temp_tex;
+    }
+
+    //fragColor = vec4(10*uv_coord, 0, 1);
 }

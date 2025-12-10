@@ -71,7 +71,7 @@ void PostProcess::makeFBO() {
 
     // Task 21: Add our texture as a color attachment, and our renderbuffer as a depth+stencil attachment, to our FBO
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fbo_texture, 0);
-    //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_fbo_renderbuffer);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_fbo_renderbuffer);
 
     // Task 22: Unbind the FBO
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -102,7 +102,7 @@ GLuint PostProcess::getFramebuffer() {
 }
 
 void PostProcess::paintTexture() {
-    glUseProgram(m_shader);
+    //glUseProgram(m_shader);
     GLuint txt_location = glGetUniformLocation(m_shader, "txt");
     glUniform1i(txt_location, 0);
     glUniform1f(glGetUniformLocation(getShader(), "time"), getTime());
