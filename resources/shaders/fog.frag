@@ -17,7 +17,8 @@ float LinearizeDepth(float z)
 void main()
 {
     vec4 sceneColor = texture(txt, uv);
-    float depth = LinearizeDepth(texture(depthTexture, uv).r);
+    //float depth = LinearizeDepth(texture(depthTexture, uv).r);
+    vec4 depth = texture(depthTexture, uv);
     float fogMaxDist = 8.0;
     float fogMinDist = 0.1;
     vec4  fogColor = vec4(0.4, 0.4, 0.4, 1.0);
@@ -27,6 +28,6 @@ void main()
     //fogFactor = clamp(fogFactor, 0.0, 1.0);
 
     //fragColor = mix(fogColor, sceneColor, fogFactor);
-    fragColor = vec4(depth);
+    fragColor = 100 * vec4(depth.r);
     //fragColor = sceneColor;
 }

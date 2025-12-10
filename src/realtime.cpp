@@ -326,6 +326,7 @@ void Realtime::paintGL() {
     // Draws contents of final post-process
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+    std::cout << "default fbo" << defaultFramebufferObject() << std::endl;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_postprocesses[m_postprocesses.size()-1]->paintTexture();
 }
