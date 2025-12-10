@@ -55,7 +55,8 @@
     {
       "groups": [
         {
-          "translate": [-4, 0.0, 0.65],
+          "translate": [-4, 0.0, 4.65],
+          "scale": [1.2, 1.2, 1.2],
           "primitives": [
             {
               "type": "mesh",
@@ -83,7 +84,7 @@
           ]
         },
         {
-          "translate": [3, 0.0, -3],
+          "translate": [-3, 0.0, 5],
           "primitives": [
             {
               "type": "mesh",
@@ -120,13 +121,13 @@
               "textureFile": "textures/bark.png",
               "textureU": 3.0,
               "textureV": 3.0,
-              "blend": 0.2
+              "blend": 0.1
             }
           ]
         },
         {
-          "translate": [2, -1, 1.7],
-          "scale": [4.0, 2, 3.0],
+          "translate": [-1, -1, 1.7],
+          "scale": [6.0, 2, 7.0],
           "primitives": [
             {
               "type": "cylinder",
@@ -159,7 +160,7 @@
         },
         {
           "rotate": [0.0, 1.0, 0.0, -10.0],
-          "translate": [-3.0, 0.0, -7.0],
+          "translate": [-4.0, 0.0, -9.0],
           "primitives": [
             {
               "type": "mesh",
@@ -173,8 +174,23 @@
           ]
         },
         {
+          "rotate": [0.0, 1.0, 0.0, 180.0],
+          "translate": [2.0, 0.0, -7.0],
+          "primitives": [
+            {
+              "type": "mesh",
+              "blend": 1.0,
+              "ambient": [0.3, 0.3, 0.3],
+              "meshFile": "meshes/house_002.glb",
+              "diffuse": [0.83, 0.63, 0.67],
+              "specular": [1.0, 1.0, 1.0],
+              "shininess": 30.0
+            }
+          ]
+        },
+        {
           "rotate": [0.0, 1.0, 0.0, -20.0],
-          "translate": [-3.0, 0.0, -1.0],
+          "translate": [3.0, 0.0, -1.0],
           "primitives": [
             {
               "type": "mesh",
@@ -189,7 +205,7 @@
         },
         {
           "rotate": [0.0, 1.0, 0.0, -20.0],
-          "translate": [-6.0, 0.0, -2.0],
+          "translate": [6.0, 0.0, 4.0],
           "scale": [0.7, 0.7, 0.7],
           "primitives": [
             {
@@ -237,12 +253,12 @@
         },
         {
           "rotate": [0.0, 1.0, 0.0, 60.0],
-          "translate": [-1.0, 0.0, 3.0],
+          "translate": [2.0, 0.0, 5.0],
           "scale": [0.7, 0.7, 0.7],
           "primitives": [
             {
               "type": "mesh",
-              "blend": 1.0,
+              "blend": 0.8,
               "ambient": [0.3, 0.3, 0.3],
               "meshFile": "meshes/tree_001.glb",
               "diffuse": [0.83, 0.63, 0.67],
@@ -253,7 +269,7 @@
         },
         {
           "rotate": [0.0, 1.0, 0.0, -20.0],
-          "translate": [-5.0, 0.0, 4.0],
+          "translate": [-4.0, 0.0, 9.0],
           "primitives": [
             {
               "type": "mesh",
@@ -268,7 +284,7 @@
         },
         {
           "rotate": [0.0, 1.0, 0.0, 10.0],
-          "translate": [5.0, 0.0, -4.0],
+          "translate": [8.0, 0.0, -4.0],
           "primitives": [
             {
               "type": "mesh",
@@ -283,11 +299,12 @@
         },
         {
           "rotate": [0.0, 1.0, 0.0, -60.0],
-          "translate": [-10.0, 0.0, -7.0],
+          "translate": [-10.0, 0.0, -4.0],
+          "scale": [0.7, 0.7, 0.7],
           "primitives": [
             {
               "type": "mesh",
-              "blend": 1.0,
+              "blend": 0.8,
               "ambient": [0.3, 0.3, 0.3],
               "meshFile": "meshes/tree_001.glb",
               "diffuse": [0.83, 0.63, 0.67],
@@ -297,8 +314,8 @@
           ]
         },
         {
-          "rotate": [0.0, 1.0, 0.0, -20.0],
-          "translate": [-3.0, 0.0, -3.0],
+          "rotate": [0.0, 1.0, 0.0, 160.0],
+          "translate": [-3.0, 0.0, 6.0],
           "primitives": [
             {
               "type": "mesh",
@@ -313,6 +330,8 @@
         },
         {
           "rotate": [0.0, 1.0, 0.0, -50.0],
+          "translate": [0, 0, -3],
+          "scale": [1.7, 1.7, 1.7],
           "primitives": [
             {
               "type": "mesh",
@@ -326,8 +345,40 @@
           ]
         },
         {
+          "rotate": [0.0, 1.0, 0.0, -20.0],
+          "translate": [1, 0, -3],
+          "scale": [1.5, 1.5, 1.5],
+          "primitives": [
+            {
+              "type": "mesh",
+              "blend": 1.0,
+              "ambient": [0.3, 0.3, 0.3],
+              "meshFile": "meshes/chicken3.glb",
+              "diffuse": [0.99, 0.73, 0.43],
+              "specular": [1.0, 1.0, 1.0],
+              "shininess": 30.0
+            }
+          ]
+        },
+        {
+          "rotate": [0.0, 1.0, 0.0, 50.0],
+          "translate": [1, 0, -4],
+          "scale": [1.5, 1.5, 1.5],
+          "primitives": [
+            {
+              "type": "mesh",
+              "blend": 1.0,
+              "ambient": [0.3, 0.3, 0.3],
+              "meshFile": "meshes/chicken3.glb",
+              "diffuse": [0.99, 0.73, 0.43],
+              "specular": [1.0, 1.0, 1.0],
+              "shininess": 30.0
+            }
+          ]
+        },
+        {
           "rotate": [0.0, 1.0, 0.0, -60.0],
-          "translate": [3.0, 0.0, 1.0],
+          "translate": [3.0, 0.0, 4.0],
           "primitives": [
             {
               "type": "mesh",
@@ -342,7 +393,7 @@
         },
         {
           "rotate": [0.0, 1.0, 0.0, 60.0],
-          "translate": [6.0, 0.0, -2.0],
+          "translate": [6.0, 0.0, 0.0],
           "scale": [0.7, 0.7, 0.7],
           "primitives": [
             {
@@ -358,7 +409,7 @@
         },
         {
           "rotate": [0.0, 1.0, 0.0, 20.0],
-          "translate": [-6.0, 0.0, 5.0],
+          "translate": [-7.0, 0.0, 8.0],
           "scale": [0.7, 0.7, 0.7],
           "primitives": [
             {
