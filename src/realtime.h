@@ -6,6 +6,7 @@
 #include "postprocessing/colorgrade.h"
 #include "postprocessing/convolution.h"
 #include "postprocessing/fog.h"
+#include "postprocessing/seasoncolorgrade.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #endif
@@ -172,7 +173,7 @@ private:
     std::map<std::string, int> m_texIndexLUT;
     std::vector<GLuint> m_skybox;
     //postprocessing
-    std::vector<std::unique_ptr<PostProcess>> m_postprocesses;
+    std::vector<std::unique_ptr<SeasonColorgrade>> m_postprocesses;
 
     GLuint m_skybox_vbo_id = 0, m_skybox_vao_id = 0;
     int m_skybox_size = 1;

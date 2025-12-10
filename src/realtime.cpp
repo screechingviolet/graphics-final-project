@@ -4,6 +4,7 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <iostream>
+#include "postprocessing/seasoncolorgrade.h"
 #include "settings.h"
 #include "utils/shaderloader.h"
 #include <glm/gtx/transform.hpp>
@@ -101,8 +102,20 @@ void Realtime::initializeGL() {
     sceneChanged();
 
     // postprocessing pipeline initialization
-    m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    // m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
     //m_postprocesses.push_back(std::make_unique<Fog>(5.0f, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    std::array<std::string, n_LUTs> LUTs = {
+        ":/resources/images/Cold_Ice.png",
+        ":/resources/images/greeny.png",
+        ":/resources/images/sepia.png",
+        ":/resources/images/doom_old.png"
+    };
+    std::array<int, n_LUTs> slices = {16, 16, 16, 16};
+    m_postprocesses.push_back(std::make_unique<SeasonColorgrade>(
+        LUTs,
+        slices,
+        size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio)
+    );
 }
 
 void Realtime::drawSkybox() {
@@ -398,6 +411,7 @@ void Realtime::sceneChanged() {
 }
 
 void Realtime::settingsChanged() {
+    if (m_postprocesses.size() > 0) m_postprocesses[0]->setSeason(settings.season);
     makeCurrent();
     if (m_sphereIds->shape_vao != 0 && m_sphereIds->shape_vbo != 0) {
         m_sphere->updateParams(settings.shapeParameter1, settings.shapeParameter2);

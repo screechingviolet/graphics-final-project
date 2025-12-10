@@ -4,7 +4,7 @@
 #include "postprocessing/postprocess.h"
 #include <QtGui/qimage.h>
 
-constexpr int n_LUTs = 2;
+constexpr int n_LUTs = 4;
 constexpr GLuint TXTSLOTSTART = GL_TEXTURE16;
 constexpr int SLOTSTART = 16;
 

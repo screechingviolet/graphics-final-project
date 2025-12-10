@@ -30,7 +30,7 @@ void SeasonColorgrade::paintTexture() {
     // represents float values for winter, spring, summer, fall
     // eps to guarantee that m_season is > first val and < last val
     float eps = 0.0001;
-    float season_floats[4] = {0.f - eps, 1.f + eps};
+    float season_floats[4] = {0.f - eps, 1.f/3.f, 2.f/3.f, 1.f + eps};
 
     int i = 0;
     while (m_season > season_floats[i]) i++;
