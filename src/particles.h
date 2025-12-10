@@ -25,15 +25,16 @@ public:
 
     Particle(glm::vec3 eye) {
         for (int i = 0; i < 3; i++) {
-            pos[i] = MiscUtilities::randomGen(-2, 2);
+            pos[i] = MiscUtilities::randomGen(-5, 5);
             velocity[i] = MiscUtilities::randomGen(-0.3, 0.3);
             //color[i] = MiscUtilities::randomGen(1, 1);
-            color[i] = 0;
+            color[i] = 1;
             //pos[i] = 1;
             //velocity[i] = 0;
             //color[i] = 0;
         }
 
+        color = glm::vec4(200, 200, 200, 1);
         color[3] = 1;
 
         size = MiscUtilities::randomGen(0.03, 0.1);

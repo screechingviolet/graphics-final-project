@@ -13,6 +13,7 @@ void main()
     vec2 p = UVCoords * 2.0 - 1.0;
     float d = dot(p, p);
     float alpha = 1;
+    vec4 tempColor = vec4(0.8, 0.7, 0.2, 1);
 
     if (d >= 1) {
         discard;
@@ -23,6 +24,6 @@ void main()
     // smooth circular edge
     //alpha = 1.0 - smoothstep(0.5, 1.0, sqrt(d));
 
-    color = vec4(particleColor.rgb, alpha);
+    color = vec4(tempColor.rgb, alpha);
     //color = vec4(alpha);
 }

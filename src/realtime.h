@@ -136,6 +136,8 @@ private:
     GLuint m_vboLcylinder;
     GLuint m_vaoLcylinder;
     std::vector<GLfloat> m_LcylinderData;
+    GLuint m_l_system_shader;
+    bool updateToggle = true;
 
     // Particle Details
     int m_numParticles;

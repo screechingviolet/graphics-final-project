@@ -74,7 +74,7 @@ void Realtime::setupLSystems() {
 void Realtime::setupParticles() {
     m_dt = 0.01;
     m_numParticles = 0;
-    m_maxNumParticles = 100;
+    m_maxNumParticles = 150;
 
     // Initialise Particles
     for (unsigned int i = 0; i < m_maxNumParticles; ++i) {
