@@ -75,6 +75,7 @@ void PostProcess::makeFBO() {
 
     // Task 22: Unbind the FBO
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    std::cout << "end" << std::endl;
 }
 
 float PostProcess::getTime() {
@@ -101,7 +102,7 @@ GLuint PostProcess::getFramebuffer() {
 }
 
 void PostProcess::paintTexture() {
-    glUseProgram(m_shader);
+    //glUseProgram(m_shader);
     GLuint txt_location = glGetUniformLocation(m_shader, "txt");
     glUniform1i(txt_location, 0);
     glUniform1f(glGetUniformLocation(getShader(), "time"), getTime());

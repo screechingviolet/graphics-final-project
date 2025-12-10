@@ -4,6 +4,7 @@
 #include "GL/glew.h"
 #include <string>
 #include <vector>
+#include <chrono>
 
 class PostProcess
 {
@@ -22,9 +23,11 @@ public:
 
     virtual ~PostProcess() {}
 
-private:
+protected:
     int m_fbo_width;
     int m_fbo_height;
+
+private:
     GLuint m_shader;
     GLuint m_fbo;
     GLuint m_fbo_texture;

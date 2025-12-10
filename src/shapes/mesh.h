@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
+#include <string>
 
 #include "cgltf.h"
 

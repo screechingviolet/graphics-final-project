@@ -1,4 +1,5 @@
 #include "camerapath.h"
+#include <stdexcept>
 
 CameraPath::CameraPath(std::vector<Keyframe> keyframes) {
     m_keyframes = keyframes;

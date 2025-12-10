@@ -6,6 +6,7 @@
 #include <iostream>
 #include "settings.h"
 #include "utils/shaderloader.h"
+#include <glm/gtx/transform.hpp>
 
 
 // ================== Rendering the Scene!
@@ -86,20 +87,22 @@ void Realtime::initializeGL() {
     // ------ my code starts here -----
     glClearColor(0, 0, 0, 1.0);
 
+
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/anim.vert", ":/resources/shaders/anim.frag");
     m_skybox_shader = ShaderLoader::createShaderProgram(":/resources/shaders/skybox.vert", ":/resources/shaders/skybox.frag");
+    m_particleShader = ShaderLoader::createShaderProgram(":/resources/shaders/particles.vert", ":/resources/shaders/particles.frag");
 
     for (int i = 0; i < 108; i++) {
         m_skybox_vbo[i] *= m_skybox_size;
     }
 
     buildGeometry();
-
-
     rebuildMeshes();
+    sceneChanged();
 
     // postprocessing pipeline initialization
-    // m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    //m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    //m_postprocesses.push_back(std::make_unique<Fog>(5.0f, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
 }
 
 void Realtime::drawSkybox() {
@@ -119,6 +122,95 @@ void Realtime::drawSkybox() {
     glDepthMask(GL_TRUE);
 }
 
+void Realtime::updateLSystems() {
+    QString output = generateLSystemString(m_rules, m_axiom, m_LSystemIterations);
+    SceneNode *LSystem;
+    LSystem = createLSystemNode(output);
+    //m_LSystems.push_back(&LSystem);
+    m_LSystemMetaData.shapes.clear();
+    glm::mat4 identityMat(1.0f);
+    SceneParser::parseRecursive(m_LSystemMetaData, LSystem, identityMat);
+
+    for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
+        //m_LSystemMetaData.shapes[i].ctm *= glm::translate(glm::vec3(-4, -1, 4));
+        m_LSystemMetaData.shapes[i].ctm *= glm::scale(m_LSystemScaler * glm::vec3(0.15, 1, 0.15));
+    }
+
+    m_LSystemIterationsChanged = false;
+}
+
+void Realtime::paintLSystems() {
+    glBindVertexArray(m_vaoLcylinder);
+
+    //In case you updated a buffer
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    if (true) {
+        updateLSystems();
+    }
+
+    for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
+        //Shininess and ctm uniforms depends on specific shape
+        // Task 6: pass in m_model as a uniform into the shader program
+        GLint modelLocation = glGetUniformLocation(m_shader, "model");
+        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, &m_LSystemMetaData.shapes[i].ctm[0][0]);
+        GLint shininessLocation = glGetUniformLocation(m_shader, "m_shininess");
+        glUniform1f(shininessLocation, m_LSystemMetaData.shapes[i].primitive.material.shininess);
+
+        // Shape-specific colours
+        GLint cAmbientLocation = glGetUniformLocation(m_shader, "cAmbient");
+        GLint cDiffuseLocation = glGetUniformLocation(m_shader, "cDiffuse");
+        GLint cSpecularLocation = glGetUniformLocation(m_shader, "cSpecular");
+        glm::vec4 ambient = m_LSystemMetaData.shapes[i].primitive.material.cAmbient;
+        glm::vec4 diffuse = m_LSystemMetaData.shapes[i].primitive.material.cDiffuse;
+        glm::vec4 specular = m_LSystemMetaData.shapes[i].primitive.material.cSpecular;
+        glUniform4f(cAmbientLocation, ambient[0], ambient[1], ambient[2], ambient[3]);
+        glUniform4f(cDiffuseLocation, diffuse[0], diffuse[1], diffuse[2], diffuse[3]);
+        glUniform4f(cSpecularLocation, specular[0], specular[1], specular[2], specular[3]);
+
+        // Draw Command
+        //std::cout << "size of data" << m_LcylinderData.size() << std::endl;
+        glDrawArrays(GL_TRIANGLES, 0, m_LcylinderData.size() / 6);
+
+    }
+}
+
+void Realtime::paintParticles() {
+    //if (m_tesselationChanged) {
+    if (true) {
+        //m_particleVelocityGlobal = m_param1;
+        m_particleVelocityGlobal = 5;
+    }
+
+    glUseProgram(m_particleShader);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBindVertexArray(m_vaoParticles);
+
+    // Task 7: pass in m_view and m_proj
+    GLint viewLocation = glGetUniformLocation(m_particleShader, "viewMatrix");
+    glUniformMatrix4fv(viewLocation, 1, GL_FALSE, &m_cam.view[0][0]);
+    GLint projLocation = glGetUniformLocation(m_particleShader, "projectionMatrix");
+    glUniformMatrix4fv(projLocation, 1, GL_FALSE, &m_proj[0][0]);
+    GLint particleCTMLocation = glGetUniformLocation(m_particleShader, "modelMatrix");
+    glUniformMatrix4fv(particleCTMLocation, 1, GL_FALSE, &m_particleCtm[0][0]);
+
+    particleUpdate();
+
+    //glm::vec3 worldSpacePos = m_particleCtm * glm::vec4(m_particulePositionSizeData[0], m_particulePositionSizeData[1], m_particulePositionSizeData[2], 1);
+    //glm::vec3 glPos = m_sceneCam.getProjectionMatrix() * m_sceneCam.getViewMatrix() * glm::vec4(worldSpacePos, 1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vboParticlesPositionSize);
+    glBufferData(GL_ARRAY_BUFFER, m_maxNumParticles * 4 * sizeof(GLfloat), m_particulePositionSizeData.data(), GL_STREAM_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vboParticlesColor);
+    glBufferData(GL_ARRAY_BUFFER, m_maxNumParticles * 4 * sizeof(GLfloat), m_particuleColorData.data(), GL_STREAM_DRAW);
+
+    //glDrawArrays(GL_TRIANGLES, 0, m_particleVertexData.size() / 6);
+    glDepthMask(GL_FALSE);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, m_numParticles);
+    glDepthMask(GL_TRUE);
+}
 
 void Realtime::paintScene() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -139,6 +231,9 @@ void Realtime::paintScene() {
     GLuint vertices;
     int animating;
     bool usingTexture;
+
+
+
     // for each shape: bind vao, decl shape uniforms, draw, unbind, repeat
     for (RenderShapeData &shape: m_renderdata.shapes) {
         animating = 0;
@@ -154,6 +249,7 @@ void Realtime::paintScene() {
             glBindVertexArray(m_cubeIds->shape_vao);
             break;
         case PrimitiveType::PRIMITIVE_CYLINDER:
+            //std::cout << "found cylinder" << std::endl;
             vertices = m_cylinder->num_triangles;
             usingTexture = shape.primitive.material.textureMap.isUsed;
             glBindVertexArray(m_cylinderIds->shape_vao);
@@ -178,8 +274,11 @@ void Realtime::paintScene() {
         // TEXTURING
         glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture); // depends on individual mesh
         if (usingTexture) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, m_textures[0]);
+            int texIndex = m_texIndexLUT[shape.primitive.material.textureMap.filename];
+            glUniform1i(glGetUniformLocation(m_shader, "txtIndex"), texIndex); // depends on individual mesh
+
+            glActiveTexture(GL_TEXTURE20 + texIndex);
+            glBindTexture(GL_TEXTURE_2D, m_textures[texIndex]);
         }
 
         // GEOMETRY
@@ -206,6 +305,10 @@ void Realtime::paintScene() {
         glBindTexture(GL_TEXTURE_2D, 0);
         glBindVertexArray(0);
     }
+
+    paintLSystems();
+    paintParticles();
+
     glUseProgram(0);
 }
 
@@ -219,16 +322,18 @@ void Realtime::paintGL() {
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
     paintScene();
 
+    // Outputs contents of each framebuffer into the next post-process as input
     for (int i = 1; i < m_postprocesses.size(); i++) {
         glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[i]->getFramebuffer());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         m_postprocesses[i-1]->paintTexture();
     }
 
+    // Draws contents of final post-process
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+    glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_postprocesses[m_postprocesses.size()-1]->paintTexture();
-
 }
 
 void Realtime::resizeGL(int w, int h) {
@@ -245,8 +350,12 @@ void Realtime::resizeGL(int w, int h) {
 
 void Realtime::sceneChanged() {
     makeCurrent();
-    SceneParser::parse(settings.sceneFilePath, m_renderdata);
-    initializeTextures(settings.sceneFilePath);
+    std::string filepath = "scenefiles/realtime/extra_credit/finalscene.json";
+    SceneParser::parse(filepath, m_renderdata);
+    //SceneParser::parse("/Users/lightspark/Documents/CS1230/graphics-final-project/scenefiles/realtime/extra_credit/finalscene.json", m_renderdata);
+    //initializeTextures(settings.sceneFilePath);
+
+    initializeTextures(filepath);
     rebuildCamera();
     rebuildMatrices();
     rebuildMeshes();
@@ -277,7 +386,7 @@ void Realtime::settingsChanged() {
 
     if (m_cylinderIds->shape_vao != 0 && m_cylinderIds->shape_vbo != 0) {
         m_cylinder->updateParams(settings.shapeParameter1, settings.shapeParameter2);
-        setupPrimitives(m_cylinderIds, m_cylinder->generateShape());
+        setupPrimitives(m_cylinderIds, m_cylinder->generateShape(), false, true);
     }
 
     if (m_shader != 0 && (settings.nearPlane != near || settings.farPlane != far)) {

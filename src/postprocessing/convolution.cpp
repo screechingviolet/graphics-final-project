@@ -1,4 +1,5 @@
 #include "convolution.h"
+#include <stdexcept>
 
 Convolution::Convolution(std::vector<float> kernel, float offset, int width, int height, std::string frag_shader)
     : PostProcess(frag_shader, width, height)
