@@ -118,7 +118,7 @@
             {
               "type": "cylinder",
               "diffuse": [0.01, 0.55, 0.03],
-              "textureFile": "textures/bark.png",
+              "textureFile": "textures/grass-lawn-texture.jpg",
               "textureU": 3.0,
               "textureV": 3.0,
               "blend": 0.1

@@ -99,6 +99,7 @@ glm::mat4 Mesh::getLocalTransformPreprocessing(cgltf_node* node) {
 void Mesh::setVertexData(const char* meshfile) {
     cgltf_options options = {cgltf_file_type_glb, 0};
     cgltf_data* data = NULL;
+    std::cout << meshfile << std::endl;
     cgltf_result result = cgltf_parse_file(&options, meshfile, &data);
     std::vector<glm::vec3> vertices_temp, normals_temp;
     std::vector<glm::vec4> weights_temp;
@@ -129,7 +130,7 @@ void Mesh::setVertexData(const char* meshfile) {
             indices.clear();
 
             for (int j = 0; j < prim->attributes_count; j++) {
-                // std::cout << "ATTR: " << prim->attributes[j].name << "\n";
+                std::cout << "ATTR: " << prim->attributes[j].name << "\n";
                 switch (prim->attributes[j].type) {
                 case cgltf_attribute_type_position:
                     pos_acc = prim->attributes[j].data;
