@@ -59,6 +59,8 @@ add_executable(${PROJECT_NAME}
     src/particles.h
     src/postprocessing/fog.cpp
     src/postprocessing/fog.h
+    src/wavefunctioncollapse.h src/wavefunctioncollapse.cpp
+    src/pngio.h src/pngio.cpp
 
 
 
