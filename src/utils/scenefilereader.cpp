@@ -70,6 +70,7 @@ bool ScenefileReader::readJSON() {
     // Read the file
     //QFile file("");
     QFile file(file_name.c_str());
+    std::cout << "VIVEK: " << file_name.c_str() << std::endl;
     if (!file.open(QFile::ReadOnly)) {
         std::cout << "could not open " << file_name << std::endl;
         return false;
@@ -105,7 +106,7 @@ bool ScenefileReader::readJSON() {
     }
 
     QStringList requiredFields = {"globalData", "cameraData"};
-    QStringList optionalFields = {"name", "groups", "templateGroups"};
+    QStringList optionalFields = {"name", "groups", "templateGroups", };
     // If other fields are present, raise an error
     QStringList allFields = requiredFields + optionalFields;
     for (auto &field : scenefile.keys()) {
@@ -809,7 +810,7 @@ bool ScenefileReader::parsePrimitive(const QJsonObject &prim, SceneNode *node) {
     QStringList requiredFields = {"type"};
     QStringList optionalFields = {
         "meshFile", "ambient", "diffuse", "specular", "reflective", "transparent", "shininess", "ior",
-        "blend", "textureFile", "textureU", "textureV", "bumpMapFile", "bumpMapU", "bumpMapV"};
+        "blend", "textureFile", "textureU", "textureV", "bumpMapFile", "bumpMapU", "bumpMapV", "isScrolling"};
 
     QStringList allFields = requiredFields + optionalFields;
     for (auto field : prim.keys()) {
@@ -867,6 +868,25 @@ bool ScenefileReader::parsePrimitive(const QJsonObject &prim, SceneNode *node) {
     else {
         std::cout << "unknown primitive type \"" << primType << "\"" << std::endl;
         return false;
+    }
+
+    if (prim.contains("texture")) {
+        if (!prim["translate"].isBool()) {
+            std::cout << "primitive texture must be of type bool" << std::endl;
+            return false;
+        }
+        QJsonValue textureBool;
+        primitive->material.textureMap.isUsed = textureBool.toBool();
+    }
+
+    if (prim.contains("isScrolling")) {
+        if (!prim["isScrolling"].isBool()) {
+            std::cout << "primitive scrolling must be of type bool" << std::endl;
+            return false;
+        }
+        QJsonValue scrollingBool = prim["isScrolling"].toBool();
+        primitive->material.textureMap.isScrolling = scrollingBool.toBool();
+        //std::cout << "------------ IS SCROLLING TYPE ---------------" << primitive->material.textureMap.isScrolling << std::endl;
     }
 
     if (prim.contains("ambient")) {
@@ -1008,7 +1028,8 @@ bool ScenefileReader::parsePrimitive(const QJsonObject &prim, SceneNode *node) {
         }
         std::filesystem::path fileRelativePath(prim["textureFile"].toString().toStdString());
 
-        mat.textureMap.filename = (basepath / fileRelativePath).string();
+        //mat.textureMap.filename = (basepath / fileRelativePath).string();
+        mat.textureMap.filename = fileRelativePath.string();
         mat.textureMap.repeatU = prim.contains("textureU") && prim["textureU"].isDouble() ? prim["textureU"].toDouble() : 1;
         mat.textureMap.repeatV = prim.contains("textureV") && prim["textureV"].isDouble() ? prim["textureV"].toDouble() : 1;
         mat.textureMap.isUsed = true;

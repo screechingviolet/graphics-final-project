@@ -4,13 +4,17 @@ in vec2 uv;
 
 uniform sampler2D txt;
 uniform sampler2D tLUT;
+uniform sampler2D depthTexture; // temporary
 uniform float slices;
 
 out vec4 fragColor;
 
 void main()
 {
+    //vec4 depth = texture(depthTexture, uv);
     vec4 origColor = texture(txt, uv);
+
+    //fragColor = depth;
 
     float xOffset = 1.0 / slices;
     float maxSlice = slices - 1.0;
@@ -33,7 +37,5 @@ void main()
 
     fragColor = vec4(colF, 1.0);
     // fragColor = vec4(origColor.r * 0.5, origColor.g * 0.5, origColor.b * 0.5, 1);
-
-
 
 }

@@ -15,6 +15,7 @@ public:
 private:
     QImage m_LUT_image;
     GLuint m_LUT_texture;
+    GLuint m_fbo_depthTexture; // temporary for test
     int m_num_slices;
 };
 

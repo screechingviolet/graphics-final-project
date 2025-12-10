@@ -59,6 +59,9 @@ add_executable(${PROJECT_NAME}
     src/particles.h
     src/postprocessing/fog.cpp
     src/postprocessing/fog.h
+    src/wavefunctioncollapse.h src/wavefunctioncollapse.cpp
+    src/pngio.h src/pngio.cpp
+
 
 
 
@@ -98,6 +101,7 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
 	resources/shaders/particles.frag
 	resources/shaders/fog.vert
 	resources/shaders/fog.frag
+	resources/shaders/scrolling.frag
 
         resources/images/test_lut_2.png
         resources/images/test_lut_2_8bit.png

@@ -158,55 +158,98 @@ void Realtime::initializeTextures(std::string filepath) {
     std::cout << "base filepath " << filepath << std::endl;
     std::filesystem::path basepath = std::filesystem::path(filepath).parent_path(); // .parent_path();
     std::filesystem::path fileRelativePath("textures/Texture_1.png");
+    //std::filesystem::path fileRelativePath("textures/water.png");
 
     // Prepare filepath
     QString tex_filepath = QString((basepath/fileRelativePath).string().c_str());
-    std::cout << (basepath / fileRelativePath).string() << std::endl;
+    std::cout << "FILEASPTH" << (basepath / fileRelativePath).string() << std::endl;
+
+    std::vector<QImage> images;
+    std::vector<QString> filenames;
 
     // Task 1: Obtain image from filepath
-    QImage image = QImage(tex_filepath);
+    filenames.push_back("textures/Texture_1.png");
+    filenames.push_back("textures/turbulentNoise.png");
 
-    if (image.isNull()) std::cout << "No such image\n";
+    // Obtain texture images for all shapes
+    for (RenderShapeData &shape: m_renderdata.shapes) {
+        if (shape.primitive.material.textureMap.isUsed) {
+            QString primitiveTextureFile = QString(shape.primitive.material.textureMap.filename.c_str());
+            std::cout << "adding file " << primitiveTextureFile.toStdString() << std::endl;
 
-    // Task 2: Format image to fit OpenGL
-    image = image.convertToFormat(QImage::Format_RGBA8888).mirrored();
+            if (std::find(filenames.begin(), filenames.end(), primitiveTextureFile) == filenames.end()) {
+                filenames.push_back(primitiveTextureFile);
+                std::cout << "mana  push back" << std::endl;
+            }
+        }
+    }
 
-    // Task 3: Generate texture
-    glGenTextures(1, &m_textures[0]);
+    for (QString &filename: filenames) {
+        std::cout << "FILENLAME:" << filename.toStdString() << std::endl;
+    }
 
-    // Task 9: Set the active texture slot to texture slot 0
-    glActiveTexture(GL_TEXTURE0);
+    for (int i = 0; i < filenames.size(); i++) {
+        std::cout << filenames[i].toStdString() << std::endl;
+        std::filesystem::path relativePath(filenames[i].toStdString());
+        tex_filepath = QString((basepath/relativePath).string().c_str());
+        QImage image = QImage(tex_filepath);
+        m_texIndexLUT[filenames[i].toStdString()] = i;
 
-    // Task 4: Bind texture
-    glBindTexture(GL_TEXTURE_2D, m_textures[0]);
+        if (image.isNull()) {
+            std::cout << "No such image: iteration " << i << std::endl;
+        }
 
-    // Task 5: Load image into texture
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+        // Task 2: Format image to fit OpenGL
+        image = image.convertToFormat(QImage::Format_RGBA8888).mirrored();
 
-    // Task 6: Set min and mag filters' interpolation mode to linear
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // Task 3: Generate texture
+        glGenTextures(1, &m_textures[i]);
 
-    // Task 7: Unbind texture
-    glBindTexture(GL_TEXTURE_2D, 0);
+        // Task 9: Set the active texture slot to texture slot 20 + i
+        glActiveTexture(GL_TEXTURE20 + i);
+
+        // Task 4: Bind texture
+        glBindTexture(GL_TEXTURE_2D, m_textures[i]);
+
+        // Task 5: Load image into texture
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+
+        // Task 6: Set min and mag filters' interpolation mode to linear
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        // Task 7: Unbind texture
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
     // SKYBOX
-
     glGenTextures(1, &m_skybox);
     glActiveTexture(GL_TEXTURE15);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox);
 
+    const std::vector<std::string> skyboxes = {"purple_sky", "dawn_sky", "cloudy_sky", "blue_sky"};
+
     std::vector<std::filesystem::path> skyboxpaths = {
-        "textures/Daylight Box_Right.bmp",
-        "textures/Daylight Box_Left.bmp",
-        "textures/Daylight Box_Top.bmp",
-        "textures/Daylight Box_Bottom.bmp",
-        "textures/Daylight Box_Front.bmp",
-        "textures/Daylight Box_Back.bmp"
+          // "textures/Daylight Box_Right.bmp",
+          // "textures/Daylight Box_Left.bmp",
+          // "textures/Daylight Box_Top.bmp",
+          // "textures/Daylight Box_Bottom.bmp",
+          // "textures/Daylight Box_Front.bmp",
+          // "textures/Daylight Box_Back.bmp"
+        "textures/purple_sky/right.png",
+        "textures/purple_sky/left.png",
+        "textures/purple_sky/up.png",
+        "textures/purple_sky/down.png",
+        "textures/purple_sky/front.png",
+        "textures/purple_sky/back.png"
     };
+
+    QImage image;
 
     for (int i = 0; i < 6; i++) {
         image = QImage((basepath / skyboxpaths[i]).string().c_str());
+        std::cout << (basepath / skyboxpaths[i]).string() << std::endl;
+        if (image.isNull()) std::cout << "image is null :(" << std::endl;
         image = image.convertToFormat(QImage::Format_RGBA8888); // .mirrored();
         if (image.isNull()) std::cout << "Failed to fetch skybox\n";
         else std::cout << "Fetched skybox\n";
@@ -230,10 +273,14 @@ void Realtime::initializeTextures(std::string filepath) {
 
     // Task 10: Set the texture.frag uniform for our texture
     glUseProgram(m_shader);
-    glUniform1i(glGetUniformLocation(m_shader, "txt"), 0);
+
+    for (int i = 0; i < filenames.size(); i++) {
+        std::string uniformName = "txt[" + std::to_string(i) + "]";
+        GLint loc = glGetUniformLocation(m_shader, uniformName.c_str());
+        glUniform1i(loc, 20 + i);
+    }
+
     glUseProgram(0);
-
-
 }
 
 
