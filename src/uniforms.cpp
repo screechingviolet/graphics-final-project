@@ -20,8 +20,10 @@ void Realtime::declareCameraUniforms() {
     glUniform4fv(loc_cam_pos, 1, &m_cam.pos[0]); // general
 }
 
-void Realtime::declareSkyboxUniforms() {
-    glUniform1i(glGetUniformLocation(m_skybox_shader, "skybox_txt"), 15);
+void Realtime::declareSkyboxUniforms(int tex1, int tex2, float interp_factor) {
+    glUniform1i(glGetUniformLocation(m_skybox_shader, "skybox_txt"), tex1); // decide based on interpolation
+    glUniform1i(glGetUniformLocation(m_skybox_shader, "skybox_txt2"), tex2); // decide based on interpolation
+    glUniform1f(glGetUniformLocation(m_skybox_shader, "interp"), interp_factor);
 
     glm::mat4 view_temp = glm::mat4(glm::mat3(m_cam.view));
     glUniformMatrix4fv(glGetUniformLocation(m_skybox_shader, "view"), 1, GL_FALSE, &view_temp[0][0]);
@@ -155,14 +157,14 @@ void Realtime::rebuildMatrices() {
 
 void Realtime::initializeTextures(std::string filepath) {
     m_textures.resize(1);
-    std::cout << "base filepath " << filepath << std::endl;
+    // std::cout << "base filepath " << filepath << std::endl;
     std::filesystem::path basepath = std::filesystem::path(filepath).parent_path(); // .parent_path();
     std::filesystem::path fileRelativePath("textures/Texture_1.png");
     //std::filesystem::path fileRelativePath("textures/water.png");
 
     // Prepare filepath
     QString tex_filepath = QString((basepath/fileRelativePath).string().c_str());
-    std::cout << "FILEASPTH" << (basepath / fileRelativePath).string() << std::endl;
+    // std::cout << "FILEASPTH" << (basepath / fileRelativePath).string() << std::endl;
 
     std::vector<QImage> images;
     std::vector<QString> filenames;
@@ -175,21 +177,21 @@ void Realtime::initializeTextures(std::string filepath) {
     for (RenderShapeData &shape: m_renderdata.shapes) {
         if (shape.primitive.material.textureMap.isUsed) {
             QString primitiveTextureFile = QString(shape.primitive.material.textureMap.filename.c_str());
-            std::cout << "adding file " << primitiveTextureFile.toStdString() << std::endl;
+            // std::cout << "adding file " << primitiveTextureFile.toStdString() << std::endl;
 
             if (std::find(filenames.begin(), filenames.end(), primitiveTextureFile) == filenames.end()) {
                 filenames.push_back(primitiveTextureFile);
-                std::cout << "mana  push back" << std::endl;
+                // std::cout << "mana  push back" << std::endl;
             }
         }
     }
 
     for (QString &filename: filenames) {
-        std::cout << "FILENLAME:" << filename.toStdString() << std::endl;
+        // std::cout << "FILENLAME:" << filename.toStdString() << std::endl;
     }
 
     for (int i = 0; i < filenames.size(); i++) {
-        std::cout << filenames[i].toStdString() << std::endl;
+        // std::cout << filenames[i].toStdString() << std::endl;
         std::filesystem::path relativePath(filenames[i].toStdString());
         tex_filepath = QString((basepath/relativePath).string().c_str());
         QImage image = QImage(tex_filepath);
@@ -223,53 +225,51 @@ void Realtime::initializeTextures(std::string filepath) {
     }
 
     // SKYBOX
-    glGenTextures(1, &m_skybox);
-    glActiveTexture(GL_TEXTURE15);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox);
+    m_skybox.resize(4);
+    for (int i = 0; i < 4; i++) {
+        glGenTextures(1, &m_skybox[i]);
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox[i]);
 
-    const std::vector<std::string> skyboxes = {"purple_sky", "dawn_sky", "cloudy_sky", "blue_sky"};
+        const std::vector<std::string> skyboxes = {"dawn_sky", "blue_sky", "purple_sky", "cloudy_sky"};
 
-    std::vector<std::filesystem::path> skyboxpaths = {
-          // "textures/Daylight Box_Right.bmp",
-          // "textures/Daylight Box_Left.bmp",
-          // "textures/Daylight Box_Top.bmp",
-          // "textures/Daylight Box_Bottom.bmp",
-          // "textures/Daylight Box_Front.bmp",
-          // "textures/Daylight Box_Back.bmp"
-        "textures/purple_sky/right.png",
-        "textures/purple_sky/left.png",
-        "textures/purple_sky/up.png",
-        "textures/purple_sky/down.png",
-        "textures/purple_sky/front.png",
-        "textures/purple_sky/back.png"
-    };
+        std::vector<std::filesystem::path> skyboxpaths = {
+            "textures/" + skyboxes[i] + "/right.png",
+            "textures/" + skyboxes[i] + "/left.png",
+            "textures/" + skyboxes[i] + "/up.png",
+            "textures/" + skyboxes[i] + "/down.png",
+            "textures/" + skyboxes[i] + "/front.png",
+            "textures/" + skyboxes[i] + "/back.png"
+        };
 
-    QImage image;
+        // use 0 to 3
 
-    for (int i = 0; i < 6; i++) {
-        image = QImage((basepath / skyboxpaths[i]).string().c_str());
-        std::cout << (basepath / skyboxpaths[i]).string() << std::endl;
-        if (image.isNull()) std::cout << "image is null :(" << std::endl;
-        image = image.convertToFormat(QImage::Format_RGBA8888); // .mirrored();
-        if (image.isNull()) std::cout << "Failed to fetch skybox\n";
-        else std::cout << "Fetched skybox\n";
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+        QImage image;
 
+        for (int j = 0; j < 6; j++) {
+            image = QImage((basepath / skyboxpaths[j]).string().c_str());
+            // std::cout << (basepath / skyboxpaths[j]).string() << std::endl;
+            if (image.isNull()) std::cout << "image is null :(" << std::endl;
+            image = image.convertToFormat(QImage::Format_RGBA8888); // .mirrored();
+            //if (image.isNull()) std::cout << "Failed to fetch skybox\n";
+            //else std::cout << "Fetched skybox\n";
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + j, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+
+        }
+
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
-
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
     // END SKYBOX
 
-    glUseProgram(m_skybox_shader);
-    declareSkyboxUniforms();
-    glUseProgram(0);
+    // glUseProgram(m_skybox_shader);
+    // declareSkyboxUniforms();
+    // glUseProgram(0);
 
     // Task 10: Set the texture.frag uniform for our texture
     glUseProgram(m_shader);

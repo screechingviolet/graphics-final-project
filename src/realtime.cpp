@@ -108,12 +108,31 @@ void Realtime::initializeGL() {
 void Realtime::drawSkybox() {
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
+    int tex1, tex2;
+    float interp_factor = 0;
+    if (settings.season < 0.25) {
+        tex1 = 3; tex2 = 0;
+        interp_factor = settings.season/0.25;
+    } else if (settings.season < 0.5) {
+        tex1 = 0; tex2 = 1;
+        interp_factor = (settings.season-0.25)/0.25;
+    } else if (settings.season < 0.75) {
+        tex1 = 1; tex2 = 2;
+        interp_factor = (settings.season-0.5)/0.25;
+    } else if (settings.season < 1.0) {
+        tex1 = 2; tex2 = 3;
+        interp_factor = (settings.season-0.75)/0.25;
+    }
     glUseProgram(m_skybox_shader);
-    declareSkyboxUniforms();
+    declareSkyboxUniforms(tex1, tex2, interp_factor);
 
     glBindVertexArray(m_skybox_vao_id);
-    glActiveTexture(GL_TEXTURE15);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox);
+    // glActiveTexture(GL_TEXTURE0); // deicde based on interpolation
+    // glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox[0]); // bind both textures
+
+    // glActiveTexture(GL_TEXTURE0); // deicde based on interpolation
+    // glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox[0]); // bind both textures
+
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
@@ -273,7 +292,7 @@ void Realtime::paintScene() {
         glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture); // depends on individual mesh
         if (usingTexture) {
             int texIndex = m_texIndexLUT[shape.primitive.material.textureMap.filename];
-            std::cout << shape.primitive.material.textureMap.filename << std::endl;
+            // std::cout << shape.primitive.material.textureMap.filename << std::endl;
             glUniform1i(glGetUniformLocation(m_shader, "txtIndex"), texIndex); // depends on individual mesh
 
             //std::cout << "texture slot: " << texIndex << std::endl;

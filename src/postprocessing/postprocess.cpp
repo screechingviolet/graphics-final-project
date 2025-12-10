@@ -74,7 +74,7 @@ void PostProcess::makeFBO() {
 
     // Task 22: Unbind the FBO
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    std::cout << "end" << std::endl;
+    // std::cout << "end" << std::endl;
 }
 
 float PostProcess::getTime() {

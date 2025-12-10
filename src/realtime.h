@@ -44,7 +44,7 @@ public:
     void declGeneralUniforms();
     void declSpecificUniforms(RenderShapeData& shape);
     void declareCameraUniforms();
-    void declareSkyboxUniforms();
+    void declareSkyboxUniforms(int tex1, int tex2, float interp_factor);
     void rebuildMatrices();
     void rebuildCamera();
     void setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles, bool anim = false, bool texturing = false);
@@ -170,7 +170,7 @@ private:
 
     std::vector<GLuint> m_textures;
     std::map<std::string, int> m_texIndexLUT;
-    GLuint m_skybox;
+    std::vector<GLuint> m_skybox;
     //postprocessing
     std::vector<std::unique_ptr<PostProcess>> m_postprocesses;
 
