@@ -27,7 +27,8 @@ public:
         for (int i = 0; i < 3; i++) {
             pos[i] = MiscUtilities::randomGen(-2, 2);
             velocity[i] = MiscUtilities::randomGen(-0.3, 0.3);
-            color[i] = MiscUtilities::randomGen(0, 1);
+            //color[i] = MiscUtilities::randomGen(1, 1);
+            color[i] = 0;
             //pos[i] = 1;
             //velocity[i] = 0;
             //color[i] = 0;

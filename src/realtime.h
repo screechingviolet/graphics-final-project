@@ -155,7 +155,7 @@ private:
     glm::mat4 m_particleCtm;
     float m_particleVelocityGlobal;
 
-    //Fog Details
+    // Fog Details
     GLuint m_fbo_texture;
     GLuint m_fbo_depthTexture;
     GLuint m_fbo_width;
@@ -164,6 +164,9 @@ private:
     GLuint m_fbo;
     GLuint m_defaultFBO;
     GLuint m_fogShader;
+
+    // Scrolling Details
+    float time_elapsed = 0;
 
     std::vector<GLuint> m_textures;
     std::map<std::string, int> m_texIndexLUT;

@@ -134,7 +134,8 @@
               "diffuse": [0.21, 0.35, 0.93],
               "textureFile": "textures/water.png",
               "textureU": 1.0,
-              "textureV": 1.0
+              "textureV": 1.0,
+              "isScrolling": true
             }
           ]
         }

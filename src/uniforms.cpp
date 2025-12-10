@@ -169,6 +169,7 @@ void Realtime::initializeTextures(std::string filepath) {
 
     // Task 1: Obtain image from filepath
     filenames.push_back("textures/Texture_1.png");
+    filenames.push_back("textures/turbulentNoise.png");
 
     // Obtain texture images for all shapes
     for (RenderShapeData &shape: m_renderdata.shapes) {
@@ -181,6 +182,10 @@ void Realtime::initializeTextures(std::string filepath) {
                 std::cout << "mana  push back" << std::endl;
             }
         }
+    }
+
+    for (QString &filename: filenames) {
+        std::cout << "FILENLAME:" << filename.toStdString() << std::endl;
     }
 
     for (int i = 0; i < filenames.size(); i++) {

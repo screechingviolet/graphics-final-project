@@ -101,6 +101,7 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
 	resources/shaders/particles.frag
 	resources/shaders/fog.vert
 	resources/shaders/fog.frag
+	resources/shaders/scrolling.frag
 
         resources/images/test_lut_2.png
         resources/images/test_lut_2_8bit.png

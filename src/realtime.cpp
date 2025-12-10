@@ -101,7 +101,7 @@ void Realtime::initializeGL() {
     sceneChanged();
 
     // postprocessing pipeline initialization
-    //m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
     //m_postprocesses.push_back(std::make_unique<Fog>(5.0f, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
 }
 
@@ -232,8 +232,6 @@ void Realtime::paintScene() {
     int animating;
     bool usingTexture;
 
-
-
     // for each shape: bind vao, decl shape uniforms, draw, unbind, repeat
     for (RenderShapeData &shape: m_renderdata.shapes) {
         animating = 0;
@@ -275,10 +273,21 @@ void Realtime::paintScene() {
         glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture); // depends on individual mesh
         if (usingTexture) {
             int texIndex = m_texIndexLUT[shape.primitive.material.textureMap.filename];
+            std::cout << shape.primitive.material.textureMap.filename << std::endl;
             glUniform1i(glGetUniformLocation(m_shader, "txtIndex"), texIndex); // depends on individual mesh
 
+            //std::cout << "texture slot: " << texIndex << std::endl;
             glActiveTexture(GL_TEXTURE20 + texIndex);
             glBindTexture(GL_TEXTURE_2D, m_textures[texIndex]);
+
+            float time = time_elapsed;
+            time_elapsed += 0.02;
+
+            glActiveTexture(GL_TEXTURE20 + 1);
+            glBindTexture(GL_TEXTURE_2D, m_textures[1]);
+            glUniform1f(glGetUniformLocation(m_shader, "time"), time);
+            glUniform1i(glGetUniformLocation(m_shader, "isScrolling"), shape.primitive.material.textureMap.isScrolling);
+            glUniform1i(glGetUniformLocation(m_shader, "noiseMap"), 21);
         }
 
         // GEOMETRY
