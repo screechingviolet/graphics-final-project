@@ -60,6 +60,10 @@ private:
     QPushButton *cameraPathButton;
     void connectCameraPath();
 
+    // seasons slider
+    QSlider *seasonSlider;
+    void connectSeasonSlider();
+
 private slots:
     // From old Project 6
     // void onPerPixelFilter();
@@ -82,5 +86,8 @@ private slots:
 
     // camera paths
     void onCameraPath();
+
+    // season
+    void onChangeSeason(int newValue);
 
 };

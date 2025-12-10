@@ -193,6 +193,22 @@ void MainWindow::initialize() {
     cameraPathButton->setText("Start Camera Path");
     vLayout->addWidget(cameraPathButton);
 
+    // seasons slider stuff
+    QLabel *seasonLabel = new QLabel(); // season label
+    seasonLabel->setText("Change Season");
+    seasonLabel->setFont(font);
+
+    seasonSlider = new QSlider(Qt::Orientation::Horizontal); // season slider
+    p1Slider->setTickInterval(1);
+    p1Slider->setMinimum(0);
+    p1Slider->setMaximum(100);
+    p1Slider->setValue(1);
+
+    vLayout->addWidget(seasonLabel);
+    vLayout->addWidget(seasonSlider);
+
+
+
     connectUIElements();
 
     // Set default values of 5 for tesselation parameters
@@ -222,6 +238,7 @@ void MainWindow::connectUIElements() {
     connectExtraCredit();
 
     connectCameraPath();
+    connectSeasonSlider();
 
 }
 
@@ -236,6 +253,10 @@ void MainWindow::connectUIElements() {
 
 void MainWindow::connectCameraPath() {
     connect(cameraPathButton, &QPushButton::clicked, this, &MainWindow::onCameraPath);
+}
+
+void MainWindow::connectSeasonSlider() {
+    connect(seasonSlider, &QSlider::valueChanged, this, &MainWindow::onChangeSeason);
 }
 
 void MainWindow::connectUploadFile() {
@@ -297,6 +318,13 @@ void MainWindow::onCameraPath() {
             Keyframe{PosRot{glm::vec3{12, 1.5, 8}, glm::quat{glm::vec3{0.f, 1.2f, 0.f}}}, 7.f},
         }
     });
+}
+
+void MainWindow::onChangeSeason(int newValue) {
+    seasonSlider->setValue(newValue);
+    settings.season = (float)(seasonSlider->value()) / 100.f;
+    qDebug() << newValue << "\n";
+    realtime->settingsChanged();
 }
 
 void MainWindow::onUploadFile() {
