@@ -59,10 +59,10 @@ void PostProcess::makeFBO() {
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Task 20: Generate and bind a renderbuffer of the right size, set its format, then unbind
-    //glGenRenderbuffers(1, &m_fbo_renderbuffer);
-    //glBindRenderbuffer(GL_RENDERBUFFER, m_fbo_renderbuffer);
-    //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_fbo_width, m_fbo_height);
-    //glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glGenRenderbuffers(1, &m_fbo_renderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_fbo_renderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_fbo_width, m_fbo_height);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     // Task 18: Generate and bind an FBO
     glGenFramebuffers(1, &m_fbo);
