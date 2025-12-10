@@ -90,6 +90,7 @@ void Realtime::initializeGL() {
 
 
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/anim.vert", ":/resources/shaders/anim.frag");
+    //m_l_system_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
     m_skybox_shader = ShaderLoader::createShaderProgram(":/resources/shaders/skybox.vert", ":/resources/shaders/skybox.frag");
     m_particleShader = ShaderLoader::createShaderProgram(":/resources/shaders/particles.vert", ":/resources/shaders/particles.frag");
 
@@ -162,9 +163,10 @@ void Realtime::updateLSystems() {
     m_LSystemMetaData.shapes.clear();
     glm::mat4 identityMat(1.0f);
     SceneParser::parseRecursive(m_LSystemMetaData, LSystem, identityMat);
+    m_LSystemScaler = 0.25;
 
     for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
-        //m_LSystemMetaData.shapes[i].ctm *= glm::translate(glm::vec3(-4, -1, 4));
+        m_LSystemMetaData.shapes[i].ctm *= glm::translate(glm::vec3(0, 0, 7));
         m_LSystemMetaData.shapes[i].ctm *= glm::scale(m_LSystemScaler * glm::vec3(0.15, 1, 0.15));
     }
 
@@ -172,13 +174,15 @@ void Realtime::updateLSystems() {
 }
 
 void Realtime::paintLSystems() {
+    glUseProgram(m_shader);
     glBindVertexArray(m_vaoLcylinder);
 
     //In case you updated a buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    if (true) {
+    if (updateToggle) {
         updateLSystems();
+        updateToggle = true;
     }
 
     for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
@@ -188,6 +192,9 @@ void Realtime::paintLSystems() {
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, &m_LSystemMetaData.shapes[i].ctm[0][0]);
         GLint shininessLocation = glGetUniformLocation(m_shader, "m_shininess");
         glUniform1f(shininessLocation, m_LSystemMetaData.shapes[i].primitive.material.shininess);
+        //GLint animatingLocation = glGetUniformLocation(m_shader, "animating");
+        //glUniform1i(animatingLocation, 0);
+        glUniform1i(glGetUniformLocation(m_shader, "animating"), 0);
 
         // Shape-specific colours
         GLint cAmbientLocation = glGetUniformLocation(m_shader, "cAmbient");
@@ -205,6 +212,8 @@ void Realtime::paintLSystems() {
         glDrawArrays(GL_TRIANGLES, 0, m_LcylinderData.size() / 6);
 
     }
+
+    glUseProgram(0);
 }
 
 void Realtime::paintParticles() {

@@ -64,7 +64,10 @@ SceneNode* Realtime::createLSystemNodeHelper(QString data, float localScale, flo
             } else {
                 SceneTransformation *transformationRotate = new SceneTransformation;
                 transformationRotate->type = TransformationType::TRANSFORMATION_ROTATE;
-                transformationRotate->rotate = glm::vec3(0.0, 0.0, 1.0);
+
+                //float xRotation = MiscUtilities::randomGen(0, 1);
+                float xRotation = 0;
+                transformationRotate->rotate = glm::vec3(xRotation, 0.0, 1.0);
                 transformationRotate->angle = updatedAngle;
                 float translateScale = m_LSystemScaler;
 
@@ -80,9 +83,11 @@ SceneNode* Realtime::createLSystemNodeHelper(QString data, float localScale, flo
 
             break;
         } else if (data[i] == "-") {
-            updatedAngle -= m_angle + MiscUtilities::randomGen(-0.2, 0.2);
+            //updatedAngle -= m_angle + MiscUtilities::randomGen(-0.2, 0.2);
+            updatedAngle -= m_angle;
         } else if (data[i] == "+") {
-            updatedAngle += m_angle + MiscUtilities::randomGen(-0.2, 0.2);
+            //updatedAngle += m_angle + MiscUtilities::randomGen(-0.2, 0.2);
+            updatedAngle -= m_angle;
         }
     }
 
@@ -113,9 +118,11 @@ SceneNode* Realtime::createLSystemNodeHelper(QString data, float localScale, flo
 
             break;
         } else if (data[i] == "-") {
-            updatedAngle -= m_angle + MiscUtilities::randomGen(-0.2, 0.2);
+            //updatedAngle -= m_angle + MiscUtilities::randomGen(-0.2, 0.2);
+            updatedAngle -= m_angle;
         } else if (data[i] == "+") {
-            updatedAngle += m_angle + MiscUtilities::randomGen(-0.2, 0.2);
+            //updatedAngle += m_angle + MiscUtilities::randomGen(-0.2, 0.2);
+            updatedAngle += m_angle;
         }
     }
 

@@ -2,142 +2,135 @@
 
 // Task 5: declare "in" variables for the world-space position and normal,
 //         received post-interpolation from the vertex shader
-in vec3 world_position;
-in vec3 world_normal;
+in vec3 worldSpacePosition;
+in vec3 worldSpaceNormal;
 
 // Task 10: declare an out vec4 for your output color
 out vec4 fragColor;
 
 // Task 12: declare relevant uniform(s) here, for ambient lighting
-uniform float ka;
+uniform float m_ka;
 
 // Task 13: declare relevant uniform(s) here, for diffuse lighting
-uniform float kd;
-// uniform vec4 lightPos;
-
-uniform vec3 lightColors[8];
-uniform int lightsNum;
-uniform int lightTypes[8];
-uniform vec3 lightFunctions[8];
-uniform vec4 lightPositions[8];
-uniform vec4 lightDirections[8];
-uniform float lightAngles[8];
-uniform float lightPenumbras[8];
+uniform float m_kd;
+uniform vec4 m_lightPos;
 
 // Task 14: declare relevant uniform(s) here, for specular lighting
-uniform float ks;
-uniform vec4 camPos;
-uniform float shininess;
-uniform vec3 shapeColorA;
-uniform vec3 shapeColorD;
-uniform vec3 shapeColorS;
+uniform float m_ks;
+uniform float m_shininess;
+uniform vec3 m_camPos;
+
+// Phong
+uniform vec4 cAmbient;
+uniform vec4 cDiffuse;
+uniform vec4 cSpecular;
+
+struct SceneLightData {
+    int type;
+
+    vec4 color;
+    vec3 function; // Attenuation function
+
+    vec4 pos; // Position with CTM applied (Not applicable to directional lights)
+    vec4 dir; // Direction with CTM applied (Not applicable to point lights)
+
+    float penumbra; // Only applicable to spot lights, in RADIANS
+    float angle;    // Only applicable to spot lights, in RADIANS
+};
+
+uniform int numLights;
+uniform SceneLightData lights[8];
+
+float getAttenuation(SceneLightData light, vec3 lightVector) {
+    float c1 = light.function[0];
+    float c2 = light.function[1];
+    float c3 = light.function[2];
+    float distance = length(lightVector);
+    float fAttenuation = min(1.0, 1.0 / (c1 + (distance * c2) + (distance * distance * c3)));
+
+    return fAttenuation;
+}
+
 
 void main() {
     // Remember that you need to renormalize vectors here if you want them to be normalized
-
     // Task 10: set your output color to white (i.e. vec4(1.0)). Make sure you get a white circle!
-    // fragColor = vec4(1.0);
 
     // Task 11: set your output color to the absolute value of your world-space normals,
     //          to make sure your normals are correct.
-    // fragColor = vec4(abs(world_normal), 1.0);
-
-    fragColor = vec4(0.0);
-
-    /*
-// Normalizing directions
-    // directionToCamera = glm::normalize(directionToCamera);
-    if (glm::dot(normal, directionToCamera) < 0) normal = -normal; // i have added this
-
-*/
-
-    vec4 surfaceToLight, reflectionvec;
-    float constantsdiffuse, constantsspecular;
-    vec4 norm = normalize(vec4(world_normal, 0.0));
-    vec4 directionToCamera = normalize(camPos-vec4(world_position, 1.0));
-    float falloff, curr_angle;
-    float inner, outer, inten;
-    float dist, f_att = 1.;
-    vec4 position = vec4(world_position, 1.0);
-    // if (dot(norm, directionToCamera) < 0) norm = -norm;
-
+    //fragColor = vec4(abs(worldSpaceNormal), 1.0);
 
     // Task 12: add ambient component to output color
-    // what if pow is to the pow of 0?
-    fragColor[0] += ka*shapeColorA[0];
-    fragColor[1] += ka*shapeColorA[1];
-    fragColor[2] += ka*shapeColorA[2];
+    fragColor = vec4(0.0);
+    fragColor = vec4(m_ka * vec3(cAmbient), 1.0);
+    bool theBugger = true;
+    //fragColor = vec4(0.0);
 
-    for (int i = 0; i < 8; i++) {
-        if (i >= lightsNum) continue;
+    for (int i = 0; i < numLights; i++) {
+        vec3 lightVector;
+        float fAttenuation = 1.0;
+        float falloff = 0.0;
 
-        // if (length(lightColors[i]) != 0) {
-        //     fragColor[2] += 1.0;
-        // }
+        switch (lights[i].type) {
+            case 0:  // POINT
+                lightVector = vec3(lights[i].pos) - worldSpacePosition;
+                fAttenuation = getAttenuation(lights[i], lightVector);
 
-        if (lightTypes[i] == 1) {
-            surfaceToLight = normalize(-lightDirections[i]);
-        }
-        if (lightTypes[i] == 0 || lightTypes[i] == 2) {
-            surfaceToLight = normalize(lightPositions[i] - position);
-        }
+                break;
+            case 1:  // DIRECTIONAL
+                lightVector = -vec3(lights[i].dir);
 
-        inten = 1;
-        if (lightTypes[i] == 2) {
-            // if (lightAngles[i] <= 1 && lightAngles[i] >= 0.1) fragColor[0] = 1.0;
-            // if (lightPenumbras[i] <= 1 && lightAngles[i] >= 0.02) fragColor[1] = 1.0;
+                break;
+            case 2:  // SPOT
+                lightVector = vec3(lights[i].pos[0], lights[i].pos[1], lights[i].pos[2]) - worldSpacePosition;
+                fAttenuation = getAttenuation(lights[i], lightVector);
+                float foundAngle = acos(dot(normalize(-lightVector), normalize(vec3(lights[i].dir))));
+                float outer = lights[i].angle;
+                float inner = outer - (lights[i].penumbra);
 
-            inner = lightAngles[i]-lightPenumbras[i];
-            outer = lightAngles[i];
-            curr_angle = acos(dot(surfaceToLight, normalize(-lightDirections[i])));
-            if ((curr_angle - inner)/(outer-inner) == 0) falloff = 0.;
-            else falloff = (-2. * pow((curr_angle - inner)/(outer-inner), 3.)) + (3. * pow((curr_angle - inner)/(outer-inner), 2.));
+                if ((foundAngle <= lights[i].angle) && (foundAngle >= inner)) {
+                    float subterm = (foundAngle - inner) / (outer - inner);
+                    falloff = -2.0f * pow(subterm, 3) + 3.0f * pow(subterm, 2);
+                } else if (foundAngle > lights[i].angle) {
+                    falloff = 1.0f;
+                } else {
+                    falloff = 0.0f;
+                }
 
-            // if (curr_angle <= inner) fragColor[0] = 1.0; // debug
-
-            if (curr_angle > inner && curr_angle <= outer) {
-                inten = max(0.0, 1.0 - falloff);
-            } else if (curr_angle > outer) {
-                inten = 0.;
-            }
-        }
-        // remove this
-        // inten = min(1, inten*2);
-
-
-        f_att = 1.;
-        if (lightTypes[i] != 1) {
-            dist = length(lightPositions[i] - position);
-            f_att = min(1., 1./(lightFunctions[i].x + dist * lightFunctions[i].y + lightFunctions[i].z * (dist*dist)));
+                break;
         }
 
-        constantsdiffuse = inten * f_att * max(dot(norm, surfaceToLight), 0.f) * kd;
-        fragColor[0] += constantsdiffuse * lightColors[i].r * shapeColorD[0];
-        fragColor[1] += constantsdiffuse * lightColors[i].g * shapeColorD[1];
-        fragColor[2] += constantsdiffuse * lightColors[i].b * shapeColorD[2];
+        vec3 L = normalize(lightVector);
+        vec3 N = normalize(worldSpaceNormal);
+        vec3 V = normalize(m_camPos - worldSpacePosition);
+        vec3 R = reflect(-L, N);
 
-        reflectionvec = -normalize(surfaceToLight - (2. * (dot(surfaceToLight, norm)) * (norm)));
-        float dotprod = dot(directionToCamera, reflectionvec);
-        if (dotprod == 0) constantsspecular = 0.;
-        else if (shininess == 0) constantsspecular = inten * f_att * ks * 1;
-        else constantsspecular = inten * f_att * ks * pow(max(dotprod, 0.0f), max(0.0, shininess));
-        fragColor[0] += constantsspecular * lightColors[i][0] * shapeColorS[0];
-        fragColor[1] += constantsspecular * lightColors[i][1] * shapeColorS[1];
-        fragColor[2] += constantsspecular * lightColors[i][2] * shapeColorS[2];
+        if (dot(N, L) >= 0) {
+            theBugger = false;
+        }
 
+        float diffuseLightContribution = clamp(m_kd * max(dot(N, L), 0), 0, 1);
+        float specularLightContribution = clamp(m_ks * pow(max(dot(R, V), 0), m_shininess), 0, 1);
+
+        vec3 diffuseColor = clamp(diffuseLightContribution * vec3(cDiffuse), 0, 1);
+        vec3 specularColor = clamp(specularLightContribution * vec3(cSpecular), 0, 1);
+
+        // Process each color channel independently
+        //float diffuseComponent = m_kd * (clamp(dot(normalize(worldSpaceNormal), normalize(lightDir)), 0, 1));
+        vec3 lightContribution = clamp(diffuseColor + specularColor, 0, 1);
+
+        float I = 1.0 - falloff;
+        fragColor += vec4(fAttenuation * I * vec3(lights[i].color) * lightContribution, 1);
+
+        //fragColor += vec4(lightContribution, 1);
     }
-    fragColor.r = min(max(fragColor.r, 0.0), 1.0);
-    fragColor.g = min(max(fragColor.g, 0.0), 1.0);
-    fragColor.b = min(max(fragColor.b, 0.0), 1.0);
 
-    // Task 13: add diffuse component to output color
-    // vec4 surfaceToLight = normalize(lightPos-vec4(world_position, 0.0));
-    // vec4 norm = normalize(vec4(world_normal, 0.0));
-    // fragColor += kd*clamp(dot(norm, surfaceToLight), 0, 1);
+    fragColor = clamp(fragColor, 0, 1);
+    fragColor = vec4(1);
+    //fragColor = vec4(m_ka * vec3(cAmbient), 1.0);
 
-    // Task 14: add specular component to output color
-    // vec4 reflection = normalize(reflect(-surfaceToLight, norm));
-    // fragColor = fragColor + ks*pow(clamp(dot(reflection, normalize(camPos-vec4(world_position, 1.0))), 0, 1), shininess);
-
-    fragColor.a = 1.0;
+    if (theBugger) {
+        //fragColor = vec4(0);
+    }
+    //fragColor = vec4(abs(worldSpaceNormal), 1.0);
 }
