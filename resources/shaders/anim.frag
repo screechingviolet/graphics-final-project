@@ -105,10 +105,10 @@ void main() {
 
     fragColor.a = 1.0;
 
-    if (usingTexture) {
-        temp_tex = texture(txt[txtIndex], uv_coord);
-        fragColor = temp_tex;
-    }
+    // if (usingTexture) {
+    //     temp_tex = texture(txt[txtIndex], uv_coord);
+    //     fragColor = temp_tex;
+    // }
 
     //fragColor = vec4(10*uv_coord, 0, 1);
 }
