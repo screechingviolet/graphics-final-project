@@ -61,6 +61,7 @@ add_executable(${PROJECT_NAME}
     src/postprocessing/fog.h
     src/wavefunctioncollapse.h src/wavefunctioncollapse.cpp
     src/pngio.h src/pngio.cpp
+    src/postprocessing/crepuscular.h src/postprocessing/crepuscular.cpp
 
 
 
@@ -101,6 +102,12 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
 	resources/shaders/particles.frag
 	resources/shaders/fog.vert
 	resources/shaders/fog.frag
+        resources/shaders/shadow_depth.vert
+        resources/shaders/shadow_depth.frag
+        resources/shaders/shadow_depth_point.vert
+        resources/shaders/shadow_depth_point.frag
+        resources/shaders/crepuscular.frag
+        resources/shaders/crepuscular.vert
 
         resources/images/test_lut_2.png
         resources/images/test_lut_2_8bit.png

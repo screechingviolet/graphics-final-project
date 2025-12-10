@@ -8,6 +8,28 @@
 #include "utils/shaderloader.h"
 #include <glm/gtx/transform.hpp>
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "postprocessing/crepuscular.h"
+
+// Helper structures for light space calculations
+struct LightSpace {
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
+struct CubeLightSpace {
+    glm::mat4 views[6];
+    glm::mat4 proj;
+};
+
+void checkGLError(const char* location) {
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR) {
+        std::cerr << "OpenGL Error at " << location << ": " << err
+                  << " (0x" << std::hex << err << std::dec << ")" << std::endl;
+    }
+}
 
 // ================== Rendering the Scene!
 
@@ -59,6 +81,8 @@ void Realtime::finish() {
         m_postprocesses[i]->destroyVertex();
     }
 
+    deleteShadowResources();
+
     this->doneCurrent();
 }
 
@@ -100,9 +124,20 @@ void Realtime::initializeGL() {
     rebuildMeshes();
     sceneChanged();
 
+    if (!m_renderdata.lights.empty()) {
+        createShadowResources();
+    }
+
     // postprocessing pipeline initialization
     //m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
     //m_postprocesses.push_back(std::make_unique<Fog>(5.0f, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    m_postprocesses.push_back(std::make_unique<Crepuscular>(
+        size().width() * m_devicePixelRatio,         // width
+        size().height() * m_devicePixelRatio,        // height
+        &m_cam,                                      // Camera pointer
+        &m_renderdata,                               // RenderData pointer
+        &m_proj                                      // Projection matrix pointer
+        ));
 }
 
 void Realtime::drawSkybox() {
@@ -116,6 +151,10 @@ void Realtime::drawSkybox() {
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
+    // CLEANUP
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    glBindVertexArray(0);
+    glActiveTexture(GL_TEXTURE0);  // <-- ADD THIS LINE!
 
     glUseProgram(0);
     glEnable(GL_DEPTH_TEST);
@@ -213,6 +252,10 @@ void Realtime::paintParticles() {
 }
 
 void Realtime::paintScene() {
+    // 1. Render shadow maps FIRST
+    //renderShadowMaps();
+
+    // 2. Then render the main scene
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     drawSkybox();
     glUseProgram(m_shader);
@@ -228,11 +271,12 @@ void Realtime::paintScene() {
         }
     }
 
+    // Bind shadow maps to the shader
+    //bindShadowMapsToShader(m_shader);
+
     GLuint vertices;
     int animating;
     bool usingTexture;
-
-
 
     // for each shape: bind vao, decl shape uniforms, draw, unbind, repeat
     for (RenderShapeData &shape: m_renderdata.shapes) {
@@ -249,7 +293,6 @@ void Realtime::paintScene() {
             glBindVertexArray(m_cubeIds->shape_vao);
             break;
         case PrimitiveType::PRIMITIVE_CYLINDER:
-            //std::cout << "found cylinder" << std::endl;
             vertices = m_cylinder->num_triangles;
             usingTexture = shape.primitive.material.textureMap.isUsed;
             glBindVertexArray(m_cylinderIds->shape_vao);
@@ -272,17 +315,29 @@ void Realtime::paintScene() {
         }
 
         // TEXTURING
-        glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture); // depends on individual mesh
+        glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture);
         if (usingTexture) {
             int texIndex = m_texIndexLUT[shape.primitive.material.textureMap.filename];
-            glUniform1i(glGetUniformLocation(m_shader, "txtIndex"), texIndex); // depends on individual mesh
 
-            glActiveTexture(GL_TEXTURE20 + texIndex);
+            glUniform1i(glGetUniformLocation(m_shader, "txtIndex"), texIndex);
+            checkGLError("After txtIndex uniform");
+
+            int actualUnit = GL_TEXTURE20 + texIndex;
+            if (actualUnit > GL_TEXTURE31) {  // Most GPUs support 32 texture units (0-31)
+                std::cerr << "ERROR: Texture unit " << actualUnit << " exceeds maximum!" << std::endl;
+                continue;
+            }
+
+            glActiveTexture(actualUnit);
+            checkGLError("After activating texture unit");
+
             glBindTexture(GL_TEXTURE_2D, m_textures[texIndex]);
+            checkGLError("After binding texture");
         }
 
         // GEOMETRY
         declSpecificUniforms(shape);
+        checkGLError("After declSpecificUniforms");  // <-- ADD THIS
 
         // ANIMATION
         glUniform1i(glGetUniformLocation(m_shader, "animating"), animating);
@@ -352,19 +407,29 @@ void Realtime::sceneChanged() {
     makeCurrent();
     std::string filepath = "scenefiles/realtime/extra_credit/finalscene.json";
     SceneParser::parse(filepath, m_renderdata);
-    //SceneParser::parse("/Users/lightspark/Documents/CS1230/graphics-final-project/scenefiles/realtime/extra_credit/finalscene.json", m_renderdata);
-    //initializeTextures(settings.sceneFilePath);
 
     initializeTextures(filepath);
     rebuildCamera();
     rebuildMatrices();
     rebuildMeshes();
 
+    // Recreate shadow resources for new scene
+    // if (!m_renderdata.lights.empty()) {
+    //     createShadowResources();
+    // }
+
+    // Update crepuscular rays if active
+    for (auto& pp : m_postprocesses) {
+        if (auto* crep = dynamic_cast<Crepuscular*>(pp.get())) {
+            crep->updateCameraAndScene(&m_cam, &m_renderdata, &m_proj);
+        }
+    }
+
     glUseProgram(m_shader);
     declareCameraUniforms();
     declGeneralUniforms();
     glUseProgram(0);
-    update(); // asks for a PaintGL() call to occur
+    update();
 }
 
 void Realtime::settingsChanged() {
@@ -397,6 +462,562 @@ void Realtime::settingsChanged() {
     }
     update(); // asks for a PaintGL() call to occur
     // if nearPlane or farPlane changed update camera settings
+}
+
+// ============================================================================
+// SHADOW MAPPING HELPER FUNCTIONS
+// ============================================================================
+
+static LightSpace makeOrthoForDirectional(const SceneLightData &L)
+{
+    LightSpace ls;
+
+    glm::vec3 center(0.0f, 0.0f, 0.0f);
+    glm::vec3 lightDir = glm::normalize(glm::vec3(L.dir));
+    float distance = 100.0f;
+    glm::vec3 pos = center - lightDir * distance;
+
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+    if (fabs(glm::dot(up, lightDir)) > 0.99f) {
+        up = glm::vec3(1.0f, 0.0f, 0.0f);
+    }
+
+    ls.view = glm::lookAt(pos, center, up);
+
+    float orthoSize = 5.0f;
+    float nearP = 1.0f;
+    float farP = distance + 100.0f;
+    ls.proj = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearP, farP);
+
+    return ls;
+}
+
+static LightSpace makePerspectiveForSpot(const SceneLightData &L)
+{
+    LightSpace ls;
+
+    glm::vec3 pos = glm::vec3(L.pos);
+    glm::vec3 dir = glm::normalize(glm::vec3(L.dir));
+
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+    if (fabs(glm::dot(up, dir)) > 0.99f) up = glm::vec3(1.0f, 0.0f, 0.0f);
+
+    ls.view = glm::lookAt(pos, pos + dir, up);
+
+    float angle = L.angle;
+    if (angle > 3.14159265f) {
+        angle = glm::radians(angle);
+    }
+    float fovy = glm::clamp(2.0f * angle, 0.01f, glm::radians(170.0f));
+
+    float aspect = 1.0f;
+    float nearP = 0.1f;
+    float farP = 100.0f;
+
+    ls.proj = glm::perspective(fovy, aspect, nearP, farP);
+
+    return ls;
+}
+
+static CubeLightSpace makeCubeFaceMatrices(const SceneLightData &L)
+{
+    CubeLightSpace cs;
+
+    glm::vec3 pos = glm::vec3(L.pos);
+
+    std::array<glm::vec3,6> looks = {
+        glm::vec3( 1, 0, 0),
+        glm::vec3(-1, 0, 0),
+        glm::vec3( 0, 1, 0),
+        glm::vec3( 0,-1, 0),
+        glm::vec3( 0, 0, 1),
+        glm::vec3( 0, 0,-1)
+    };
+
+    std::array<glm::vec3,6> ups = {
+        glm::vec3(0,-1,0),
+        glm::vec3(0,-1,0),
+        glm::vec3(0,0,1),
+        glm::vec3(0,0,-1),
+        glm::vec3(0,-1,0),
+        glm::vec3(0,-1,0)
+    };
+
+    float nearP = 0.1f;
+    float farP  = 100.0f;
+    cs.proj = glm::perspective(glm::radians(90.0f), 1.0f, nearP, farP);
+
+    for (int i = 0; i < 6; ++i) {
+        cs.views[i] = glm::lookAt(pos, pos + looks[i], ups[i]);
+    }
+
+    return cs;
+}
+
+// ============================================================================
+// SHADOW RESOURCE MANAGEMENT
+// ============================================================================
+
+void Realtime::createShadowResources() {
+    checkGLError("START of createShadowResources");
+
+    deleteShadowResources();
+    checkGLError("After deleteShadowResources");
+
+    int count = std::min<int>((int)m_renderdata.lights.size(), MAX_SHADOW_CASTERS);
+    m_shadowMaps.resize(count);
+
+    std::cout << "Creating shadow resources for " << count << " lights" << std::endl;
+
+    for (int i = 0; i < count; ++i) {
+        std::cout << "Creating shadow map " << i << std::endl;
+        checkGLError("Start of loop iteration");
+
+        const SceneLightData &L = m_renderdata.lights[i];
+        ShadowMap sm;
+        sm.lightIndex = i;
+
+        if (L.type == LightType::LIGHT_DIRECTIONAL) {
+            std::cout << "  Light " << i << " is DIRECTIONAL" << std::endl;
+            sm.type = ShadowType::Directional;
+            sm.enabled = true;
+            sm.size = DEFAULT_SHADOW_SIZE;
+
+            glGenTextures(1, &sm.depthTex);
+            checkGLError("After glGenTextures");
+
+            glBindTexture(GL_TEXTURE_2D, sm.depthTex);
+            checkGLError("After glBindTexture");
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, sm.size, sm.size, 0,
+                         GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+            checkGLError("After glTexImage2D");
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            checkGLError("After texture parameters");
+
+            float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+            checkGLError("After border color");
+
+            glGenFramebuffers(1, &sm.fbo);
+            checkGLError("After glGenFramebuffers");
+
+            // **BIND AND CONFIGURE THE FRAMEBUFFER**
+            glBindFramebuffer(GL_FRAMEBUFFER, sm.fbo);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, sm.depthTex, 0);
+
+            // **CRITICAL: Tell OpenGL we're not rendering any color data**
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+
+            // **Check framebuffer completeness**
+            GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+            if (status != GL_FRAMEBUFFER_COMPLETE) {
+                std::cerr << "Framebuffer incomplete for light " << i << ": " << status << std::endl;
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            checkGLError("After framebuffer setup");
+
+        } else if (L.type == LightType::LIGHT_SPOT) {
+            std::cout << "  Light " << i << " is SPOT" << std::endl;
+            // Same checks for spot...
+
+        } else if (L.type == LightType::LIGHT_POINT) {
+            std::cout << "  Light " << i << " is POINT" << std::endl;
+            sm.type = ShadowType::Point;
+            sm.enabled = true;
+
+            glGenTextures(1, &sm.depthTex);
+            checkGLError("After glGenTextures (point)");
+
+            glBindTexture(GL_TEXTURE_CUBE_MAP, sm.depthTex);
+            checkGLError("After glBindTexture CUBE_MAP");
+
+            for (unsigned int face = 0; face < 6; ++face) {
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_R32F,
+                             sm.size, sm.size, 0, GL_RED, GL_FLOAT, NULL);
+                checkGLError("After glTexImage2D for cube face");
+            }
+
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+            checkGLError("After cube map texture parameters");
+
+            glGenFramebuffers(1, &sm.fbo);
+            checkGLError("After glGenFramebuffers (point)");
+
+            GLuint rboDepth = 0;
+            glGenRenderbuffers(1, &rboDepth);
+            checkGLError("After glGenRenderbuffers");
+
+            glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+            checkGLError("After glBindRenderbuffer");
+
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, sm.size, sm.size);
+            checkGLError("After glRenderbufferStorage");
+
+            sm.rbo = rboDepth;
+
+        } else {
+            std::cout << "  Light " << i << " is NONE/UNKNOWN" << std::endl;
+            sm.type = ShadowType::None;
+            sm.enabled = false;
+        }
+
+        m_shadowMaps[i] = sm;
+        checkGLError("After storing shadow map");
+    }
+
+    // Load depth shaders
+    std::cout << "Loading shadow shaders..." << std::endl;
+    checkGLError("Before loading depth shader");
+
+    m_depthShader = ShaderLoader::createShaderProgram(
+        ":/resources/shaders/shadow_depth.vert",
+        ":/resources/shaders/shadow_depth.frag"
+        );
+    checkGLError("After loading depth shader");
+
+    std::cout << "Depth shader ID: " << m_depthShader << std::endl;
+
+    m_depthPointShader = ShaderLoader::createShaderProgram(
+        ":/resources/shaders/shadow_depth_point.vert",
+        ":/resources/shaders/shadow_depth_point.frag"
+        );
+    checkGLError("After loading depth point shader");
+
+    std::cout << "Depth point shader ID: " << m_depthPointShader << std::endl;
+
+    checkGLError("END of createShadowResources");
+}
+
+void Realtime::deleteShadowResources() {
+    for (auto &sm : m_shadowMaps) {
+        if (sm.fbo) {
+            glDeleteFramebuffers(1, &sm.fbo);
+            sm.fbo = 0;
+        }
+        if (sm.depthTex) {
+            glDeleteTextures(1, &sm.depthTex);
+            sm.depthTex = 0;
+        }
+        if (sm.rbo) {
+            glDeleteRenderbuffers(1, &sm.rbo);
+            sm.rbo = 0;
+        }
+    }
+    m_shadowMaps.clear();
+
+    if (m_depthShader) {
+        glDeleteProgram(m_depthShader);
+        m_depthShader = 0;
+    }
+    if (m_depthPointShader) {
+        glDeleteProgram(m_depthPointShader);
+        m_depthPointShader = 0;
+    }
+}
+
+// ============================================================================
+// SHADOW MAP RENDERING
+// ============================================================================
+
+void Realtime::renderShadowMaps() {
+    if (m_shadowMaps.empty()) return;
+    if (!m_depthShader) return;
+
+    // checkGLError("START of renderShadowMaps");
+
+    GLint prevViewport[4];
+    glGetIntegerv(GL_VIEWPORT, prevViewport);
+
+    glUseProgram(m_depthShader);
+    // checkGLError("After glUseProgram(m_depthShader)");
+
+    for (size_t si = 0; si < m_shadowMaps.size(); ++si) {
+        ShadowMap &sm = m_shadowMaps[si];
+        if (!sm.enabled || sm.type == ShadowType::None) continue;
+
+        // std::cout << "Processing shadow map " << si << " type: " << (int)sm.type << std::endl;
+        // checkGLError("Start of shadow map iteration");
+
+        const SceneLightData &L = m_renderdata.lights[sm.lightIndex];
+
+        // Directional and Spot lights (2D depth maps)
+        if (sm.type == ShadowType::Directional || sm.type == ShadowType::Spot) {
+            glBindFramebuffer(GL_FRAMEBUFFER, sm.fbo);
+            // checkGLError("After glBindFramebuffer");
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                   GL_TEXTURE_2D, sm.depthTex, 0);
+            // checkGLError("After glFramebufferTexture2D");
+
+            // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+            // checkGLError("After glDrawBuffer(GL_NONE)");
+
+            glViewport(0, 0, sm.size, sm.size);
+            // checkGLError("After glViewport");
+
+            glClear(GL_DEPTH_BUFFER_BIT);
+            // checkGLError("After glClear");
+
+            LightSpace LS;
+            if (sm.type == ShadowType::Directional) {
+                LS = makeOrthoForDirectional(L);
+            } else {
+                LS = makePerspectiveForSpot(L);
+            }
+
+            glm::mat4 lightSpace = LS.proj * LS.view;
+            sm.lightSpaceMatrix = lightSpace;
+
+            GLint locModel = glGetUniformLocation(m_depthShader, "model");
+            GLint locLightSpace = glGetUniformLocation(m_depthShader, "lightSpace");
+
+            if (locLightSpace != -1)
+                glUniformMatrix4fv(locLightSpace, 1, GL_FALSE, glm::value_ptr(lightSpace));
+
+            // Render each shape
+            for (const RenderShapeData &shape : m_renderdata.shapes) {
+                if (locModel != -1)
+                    glUniformMatrix4fv(locModel, 1, GL_FALSE, &shape.ctm[0][0]);
+
+                // Bind appropriate VAO
+                switch (shape.primitive.type) {
+                case PrimitiveType::PRIMITIVE_CONE:
+                    glBindVertexArray(m_coneIds->shape_vao);
+                    glDrawArrays(GL_TRIANGLES, 0, m_cone->num_triangles);
+                    break;
+                case PrimitiveType::PRIMITIVE_CUBE:
+                    glBindVertexArray(m_cubeIds->shape_vao);
+                    glDrawArrays(GL_TRIANGLES, 0, m_cube->num_triangles);
+                    break;
+                case PrimitiveType::PRIMITIVE_CYLINDER:
+                    glBindVertexArray(m_cylinderIds->shape_vao);
+                    glDrawArrays(GL_TRIANGLES, 0, m_cylinder->num_triangles);
+                    break;
+                case PrimitiveType::PRIMITIVE_SPHERE:
+                    glBindVertexArray(m_sphereIds->shape_vao);
+                    glDrawArrays(GL_TRIANGLES, 0, m_sphere->num_triangles);
+                    break;
+                default:
+                    if (m_meshes.count(shape.primitive.meshfile) > 0) {
+                        glBindVertexArray(m_meshIds[shape.primitive.meshfile].shape_vao);
+                        glDrawArrays(GL_TRIANGLES, 0, m_meshes[shape.primitive.meshfile].num_triangles);
+                    }
+                    break;
+                }
+            }
+
+            glBindVertexArray(0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+        // Point lights (cubemap)
+        else if (sm.type == ShadowType::Point) {
+            glUseProgram(m_depthPointShader);
+
+            float nearp = 0.1f;
+            float farp = m_pointLightFar;
+
+            CubeLightSpace CS = makeCubeFaceMatrices(L);
+
+            GLint locModel = glGetUniformLocation(m_depthPointShader, "model");
+            GLint locView = glGetUniformLocation(m_depthPointShader, "view");
+            GLint locProj = glGetUniformLocation(m_depthPointShader, "proj");
+            GLint locLightPos = glGetUniformLocation(m_depthPointShader, "lightPos");
+            GLint locFarPlane = glGetUniformLocation(m_depthPointShader, "farPlane");
+
+            glm::vec3 lightPos = glm::vec3(L.pos);
+            if (locLightPos != -1) glUniform3f(locLightPos, lightPos.x, lightPos.y, lightPos.z);
+            if (locFarPlane != -1) glUniform1f(locFarPlane, farp);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, sm.fbo);
+            glViewport(0, 0, sm.size, sm.size);
+
+            for (int face = 0; face < 6; ++face) {
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                       GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, sm.depthTex, 0);
+                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                          GL_RENDERBUFFER, sm.rbo);
+                glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                glm::mat4 viewMat = CS.views[face];
+                glm::mat4 projMat = CS.proj;
+
+                if (locView != -1) glUniformMatrix4fv(locView, 1, GL_FALSE, glm::value_ptr(viewMat));
+                if (locProj != -1) glUniformMatrix4fv(locProj, 1, GL_FALSE, glm::value_ptr(projMat));
+
+                for (const RenderShapeData &shape : m_renderdata.shapes) {
+                    if (locModel != -1) glUniformMatrix4fv(locModel, 1, GL_FALSE, &shape.ctm[0][0]);
+
+                    switch (shape.primitive.type) {
+                    case PrimitiveType::PRIMITIVE_CONE:
+                        glBindVertexArray(m_coneIds->shape_vao);
+                        glDrawArrays(GL_TRIANGLES, 0, m_cone->num_triangles);
+                        break;
+                    case PrimitiveType::PRIMITIVE_CUBE:
+                        glBindVertexArray(m_cubeIds->shape_vao);
+                        glDrawArrays(GL_TRIANGLES, 0, m_cube->num_triangles);
+                        break;
+                    case PrimitiveType::PRIMITIVE_CYLINDER:
+                        glBindVertexArray(m_cylinderIds->shape_vao);
+                        glDrawArrays(GL_TRIANGLES, 0, m_cylinder->num_triangles);
+                        break;
+                    case PrimitiveType::PRIMITIVE_SPHERE:
+                        glBindVertexArray(m_sphereIds->shape_vao);
+                        glDrawArrays(GL_TRIANGLES, 0, m_sphere->num_triangles);
+                        break;
+                    default:
+                        if (m_meshes.count(shape.primitive.meshfile) > 0) {
+                            glBindVertexArray(m_meshIds[shape.primitive.meshfile].shape_vao);
+                            glDrawArrays(GL_TRIANGLES, 0, m_meshes[shape.primitive.meshfile].num_triangles);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            glBindVertexArray(0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glUseProgram(0);
+        }
+    }
+
+    glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);  // CRITICAL!
+    glDrawBuffer(GL_BACK);   // or GL_COLOR_ATTACHMENT0 if using FBOs
+    glReadBuffer(GL_BACK);
+    glUseProgram(0);
+    // checkGLError("END of renderShadowMaps");
+
+}
+
+// ============================================================================
+// BIND SHADOW MAPS TO SHADER
+// ============================================================================
+
+void Realtime::bindShadowMapsToShader(GLuint shader) {
+    std::cout << "=== Binding shadow maps to shader " << shader << " ===" << std::endl;
+    checkGLError("START of bindShadowMapsToShader");
+
+    int baseUnit = 8;
+    int count = (int)m_shadowMaps.size();
+
+    std::cout << "Number of shadow maps: " << count << std::endl;
+
+    // Initialize all shadow types to 0 (no shadow)
+    for (int i = 0; i < MAX_SHADOW_CASTERS; ++i) {
+        std::string stName = "shadowType[" + std::to_string(i) + "]";
+        GLint stLoc = glGetUniformLocation(shader, stName.c_str());
+        std::cout << "  shadowType[" << i << "] location: " << stLoc << std::endl;
+        if (stLoc != -1) {
+            glUniform1i(stLoc, 0);
+            checkGLError(("After setting shadowType[" + std::to_string(i) + "]").c_str());
+        }
+    }
+
+    GLint locShadowBias = glGetUniformLocation(shader, "shadowBias");
+    GLint locEnablePCF = glGetUniformLocation(shader, "enablePCF");
+    GLint locPointFarPlane = glGetUniformLocation(shader, "pointLightFar");
+
+    std::cout << "  shadowBias loc: " << locShadowBias << std::endl;
+    std::cout << "  enablePCF loc: " << locEnablePCF << std::endl;
+    std::cout << "  pointLightFar loc: " << locPointFarPlane << std::endl;
+
+    if (locShadowBias != -1) {
+        glUniform1f(locShadowBias, m_shadowBias);
+        checkGLError("After shadowBias");
+    }
+    if (locEnablePCF != -1) {
+        glUniform1i(locEnablePCF, m_enablePCF ? 1 : 0);
+        checkGLError("After enablePCF");
+    }
+    if (locPointFarPlane != -1) {
+        glUniform1f(locPointFarPlane, m_pointLightFar);
+        checkGLError("After pointFarPlane");
+    }
+
+    for (int i = 0; i < count; ++i) {
+        const ShadowMap &sm = m_shadowMaps[i];
+
+        std::cout << "Processing shadow map " << i << ":" << std::endl;
+        std::cout << "  enabled: " << sm.enabled << ", type: " << (int)sm.type << std::endl;
+
+        int typeInt = 0;
+        if (!sm.enabled) typeInt = 0;
+        else if (sm.type == ShadowType::Directional) typeInt = 1;
+        else if (sm.type == ShadowType::Spot) typeInt = 2;
+        else if (sm.type == ShadowType::Point) typeInt = 3;
+
+        std::string stName = "shadowType[" + std::to_string(i) + "]";
+        GLint stLoc = glGetUniformLocation(shader, stName.c_str());
+        if (stLoc != -1) {
+            glUniform1i(stLoc, typeInt);
+            checkGLError(("After shadowType[" + std::to_string(i) + "]").c_str());
+        }
+
+        std::string lsName = "lightSpace[" + std::to_string(i) + "]";
+        GLint lsLoc = glGetUniformLocation(shader, lsName.c_str());
+        std::cout << "  lightSpace[" << i << "] loc: " << lsLoc << std::endl;
+        if (lsLoc != -1) {
+            glUniformMatrix4fv(lsLoc, 1, GL_FALSE, glm::value_ptr(sm.lightSpaceMatrix));
+            checkGLError(("After lightSpace[" + std::to_string(i) + "]").c_str());
+        }
+
+        if (!sm.enabled) continue;
+
+        if (sm.type == ShadowType::Directional || sm.type == ShadowType::Spot) {
+            std::cout << "  Binding 2D shadow map to unit " << (baseUnit + i) << std::endl;
+
+            glActiveTexture(GL_TEXTURE0 + baseUnit + i);
+            checkGLError(("After glActiveTexture for shadow " + std::to_string(i)).c_str());
+
+            glBindTexture(GL_TEXTURE_2D, sm.depthTex);
+            checkGLError(("After glBindTexture 2D for shadow " + std::to_string(i)).c_str());
+
+            std::string sampName = "shadowMap[" + std::to_string(i) + "]";
+            GLint sampLoc = glGetUniformLocation(shader, sampName.c_str());
+            std::cout << "  shadowMap[" << i << "] loc: " << sampLoc << std::endl;
+            if (sampLoc != -1) {
+                glUniform1i(sampLoc, baseUnit + i);
+                checkGLError(("After shadowMap sampler " + std::to_string(i)).c_str());
+            }
+        } else if (sm.type == ShadowType::Point) {
+            std::cout << "  Binding cubemap shadow to unit " << (baseUnit + i) << std::endl;
+
+            glActiveTexture(GL_TEXTURE0 + baseUnit + i);
+            checkGLError(("After glActiveTexture for cubemap " + std::to_string(i)).c_str());
+
+            glBindTexture(GL_TEXTURE_CUBE_MAP, sm.depthTex);
+            checkGLError(("After glBindTexture CUBE_MAP for shadow " + std::to_string(i)).c_str());
+
+            std::string sampName = "shadowCube[" + std::to_string(i) + "]";
+            GLint sampLoc = glGetUniformLocation(shader, sampName.c_str());
+            std::cout << "  shadowCube[" << i << "] loc: " << sampLoc << std::endl;
+            if (sampLoc != -1) {
+                glUniform1i(sampLoc, baseUnit + i);
+                checkGLError(("After shadowCube sampler " + std::to_string(i)).c_str());
+            }
+        }
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+    checkGLError("After resetting to GL_TEXTURE0");
+
+    std::cout << "=== END bindShadowMapsToShader ===" << std::endl;
 }
 
 // ================== Camera Paths!
