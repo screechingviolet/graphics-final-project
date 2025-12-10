@@ -131,11 +131,11 @@ void Realtime::updateLSystems() {
     m_LSystemMetaData.shapes.clear();
     glm::mat4 identityMat(1.0f);
     SceneParser::parseRecursive(m_LSystemMetaData, LSystem, identityMat);
-    m_LSystemScaler = 0.15;
+    m_LSystemScaler = 0.25;
 
     for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
+        m_LSystemMetaData.shapes[i].ctm *= glm::translate(glm::vec3(0, 0, 7));
         m_LSystemMetaData.shapes[i].ctm *= glm::scale(m_LSystemScaler * glm::vec3(0.15, 1, 0.15));
-        m_LSystemMetaData.shapes[i].ctm *= glm::translate(glm::vec3(-1, 0, 0));
     }
 
     m_LSystemIterationsChanged = false;
