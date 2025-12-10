@@ -309,14 +309,43 @@ void MainWindow::connectExtraCredit() {
 // }
 
 void MainWindow::onCameraPath() {
+    // realtime->activateCameraPath({
+    //     std::vector<Keyframe>{
+    //         Keyframe{PosRot{glm::vec3{12, 1.5, 0}, glm::quat{glm::vec3{0.f, 1.2f, 0.f}}}, 0.f},
+    //         Keyframe{PosRot{glm::vec3{12, 3.5, 2}, glm::quat{glm::vec3{-0.2f, 1.57f, 0.05f}}}, 3.f},
+    //         Keyframe{PosRot{glm::vec3{12, 1.5, 4}, glm::quat{glm::vec3{0.0f, 1.8f, 0.f}}}, 4.f},
+    //         Keyframe{PosRot{glm::vec3{12, -0.5, 6}, glm::quat{glm::vec3{0.2f, 1.57f, -0.05f}}}, 5.f},
+    //         Keyframe{PosRot{glm::vec3{12, 1.5, 8}, glm::quat{glm::vec3{0.f, 1.2f, 0.f}}}, 7.f},
+    //     }
+    // });
+
+    // realtime->activateCameraPath({
+    //     std::vector<Keyframe>{
+    //       Keyframe{PosRot{glm::vec3{-6, 3.5, 2}, glm::quat{glm::vec3{-0.2f, 1.57f, 0.05f}}}, 0.f},
+    //     Keyframe{PosRot{glm::vec3{0, 3.5, 2}, glm::quat{glm::vec3{-0.2f, 1.57f, 0.05f}}}, 3.f},
+    //     Keyframe{PosRot{glm::vec3{6, 3.5, 2}, glm::quat{glm::vec3{-0.2f, 1.57f, 0.05f}}}, 6.f},
+    //     Keyframe{PosRot{glm::vec3{12, 3.5, 2}, glm::quat{glm::vec3{-0.2f, 1.57f, 0.05f}}}, 9.f},
+    //     Keyframe{PosRot{glm::vec3{18, 3.5, 2}, glm::quat{glm::vec3{-0.2f, 1.57f, 0.05f}}}, 12.f},
+    //                           }
+    // });
+
+    // realtime->activateCameraPath({
+    //     std::vector<Keyframe>{
+    //                           Keyframe{PosRot{glm::vec3{18, 4, 0}, glm::quat{glm::vec3{-0.2f, 1.57f, 0.0f}}}, 0.f},
+    //     Keyframe{PosRot{glm::vec3{0, 4, 21}, glm::quat{glm::vec3{-0.2f, 0.f, 0.f}}}, 7.f},
+    //     Keyframe{PosRot{glm::vec3{-18, 4, 0}, glm::quat{glm::vec3{-0.2f, -1.57f, 0.f}}}, 14.f},
+
+    //                           }
+    // });
+
     realtime->activateCameraPath({
         std::vector<Keyframe>{
-            Keyframe{PosRot{glm::vec3{12, 1.5, 0}, glm::quat{glm::vec3{0.f, 1.2f, 0.f}}}, 0.f},
-            Keyframe{PosRot{glm::vec3{12, 3.5, 2}, glm::quat{glm::vec3{-0.2f, 1.57f, 0.05f}}}, 3.f},
-            Keyframe{PosRot{glm::vec3{12, 1.5, 4}, glm::quat{glm::vec3{0.0f, 1.8f, 0.f}}}, 4.f},
-            Keyframe{PosRot{glm::vec3{12, -0.5, 6}, glm::quat{glm::vec3{0.2f, 1.57f, -0.05f}}}, 5.f},
-            Keyframe{PosRot{glm::vec3{12, 1.5, 8}, glm::quat{glm::vec3{0.f, 1.2f, 0.f}}}, 7.f},
-        }
+                              Keyframe{PosRot{glm::vec3{0, 22, 0}, glm::quat{glm::vec3{-1.57f, -1.57f, 0.0f}}}, 0.f},
+                              Keyframe{PosRot{glm::vec3{-10, 19, 0}, glm::quat{glm::vec3{-1.1f, -1.57f, 0.f}}}, 5.f},
+                            Keyframe{PosRot{glm::vec3{-15, 14, 0}, glm::quat{glm::vec3{-0.65f, -1.57f, 0.f}}}, 10.f},
+                              Keyframe{PosRot{glm::vec3{-18, 4, 0}, glm::quat{glm::vec3{-0.2f, -1.57f, 0.f}}}, 15.f},
+
+                              }
     });
 }
 
