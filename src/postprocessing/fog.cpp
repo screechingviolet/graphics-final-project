@@ -19,12 +19,14 @@ Fog::Fog(float density, int width, int height)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, m_fbo_width, m_fbo_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, getFramebuffer());
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_fbo_depthTexture, 0);
+    //glDrawBuffer(GL_NONE);
+    //glReadBuffer(GL_NONE);
 
     // After setting up FBO, check what's wrong:
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -70,10 +72,10 @@ void Fog::paintTexture() {
     GLuint density_location = glGetUniformLocation(getShader(), "density");
     glUniform1f(density_location, m_density);
     GLuint depth_texture_location = glGetUniformLocation(getShader(), "depthTexture");
-    glUniform1i(depth_texture_location, m_fbo_depthTexture);
+    glUniform1i(depth_texture_location, 2);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, m_fbo_depthTexture);
-    glUseProgram(0);
+    //glUseProgram(0);
 
     PostProcess::paintTexture();
 

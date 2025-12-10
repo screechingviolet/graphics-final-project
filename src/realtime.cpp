@@ -327,18 +327,20 @@ void Realtime::paintGL() {
         return;
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[0]->getFramebuffer());
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[0]->getFramebuffer());
     paintScene();
 
     // Outputs contents of each framebuffer into the next post-process as input
     for (int i = 1; i < m_postprocesses.size(); i++) {
+        glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
         glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[i]->getFramebuffer());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         m_postprocesses[i-1]->paintTexture();
     }
 
     // Draws contents of final post-process
+    glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
