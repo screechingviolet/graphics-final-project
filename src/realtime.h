@@ -6,6 +6,7 @@
 #include "postprocessing/colorgrade.h"
 #include "postprocessing/convolution.h"
 #include "postprocessing/fog.h"
+#include "postprocessing/crepuscular.h"
 #include "postprocessing/seasoncolorgrade.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
@@ -38,7 +39,7 @@ class Realtime : public QOpenGLWidget
 {
 public:
     Realtime(QWidget *parent = nullptr);
-    void finish();                                      // Called on program exit
+    void finish();
     void sceneChanged();
     void settingsChanged();
     void saveViewportImage(std::string filePath);
@@ -55,7 +56,6 @@ public:
     void initializeTextures(std::string filepath);
     void setupSkybox();
     void drawSkybox();
-    // void paintTextures();
     glm::mat4 rotationhelper(glm::vec4 u, float angle);
     void activateCameraPath(CameraPath cameraPath);
     void setupLSystems();
@@ -71,14 +71,20 @@ public:
     void makeFBO();
     void paintFog();
 
+    // Shadow mapping methods
+    void createShadowResources();
+    void deleteShadowResources();
+    void renderShadowMaps();
+    void bindShadowMapsToShader(GLuint shader);
+
 public slots:
-    void tick(QTimerEvent* event);                      // Called once per tick of m_timer
+    void tick(QTimerEvent* event);
 
 protected:
-    void initializeGL() override;                       // Called once at the start of the program
+    void initializeGL() override;
     void paintScene();
-    void paintGL() override;                            // Called whenever the OpenGL context changes or by an update() request
-    void resizeGL(int width, int height) override;      // Called when window size changes
+    void paintGL() override;
+    void resizeGL(int width, int height) override;
 
 private:
     void keyPressEvent(QKeyEvent *event) override;
@@ -89,22 +95,20 @@ private:
     void timerEvent(QTimerEvent *event) override;
 
     // Tick Related Variables
-    int m_timer;                                        // Stores timer which attempts to run ~60 times per second
-    QElapsedTimer m_elapsedTimer;                       // Stores timer which keeps track of actual time between frames
+    int m_timer;
+    QElapsedTimer m_elapsedTimer;
 
     // Input Related Variables
-    bool m_mouseDown = false;                           // Stores state of left mouse button
-    glm::vec2 m_prev_mouse_pos;                         // Stores mouse position
-    std::unordered_map<Qt::Key, bool> m_keyMap;         // Stores whether keys are pressed or not
+    bool m_mouseDown = false;
+    glm::vec2 m_prev_mouse_pos;
+    std::unordered_map<Qt::Key, bool> m_keyMap;
 
     // Device Correction Variables
     double m_devicePixelRatio;
 
-    GLuint m_shader = 0; // Stores id of shader program
+    GLuint m_shader = 0;
     GLuint m_skybox_shader = 0;
     RenderData m_renderdata;
-    // GLuint m_vbo;    // Stores id of VBO
-    // GLuint m_vao;    // Stores id of VAO
     glm::mat4 m_proj, m_zoom;
     Camera m_cam;
     float near, far;
@@ -179,55 +183,78 @@ private:
 
     GLuint m_skybox_vbo_id = 0, m_skybox_vao_id = 0;
     int m_skybox_size = 1;
-    // FROM LEARN_OPENGL
     float m_skybox_vbo[108] = {
-      -1.0f,  1.0f, -1.0f,
-      -1.0f, -1.0f, -1.0f,
-      1.0f, -1.0f, -1.0f,
-      1.0f, -1.0f, -1.0f,
-      1.0f,  1.0f, -1.0f,
-      -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
 
-      -1.0f, -1.0f,  1.0f,
-      -1.0f, -1.0f, -1.0f,
-      -1.0f,  1.0f, -1.0f,
-      -1.0f,  1.0f, -1.0f,
-      -1.0f,  1.0f,  1.0f,
-      -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
 
-      1.0f, -1.0f, -1.0f,
-      1.0f, -1.0f,  1.0f,
-      1.0f,  1.0f,  1.0f,
-      1.0f,  1.0f,  1.0f,
-      1.0f,  1.0f, -1.0f,
-      1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
 
-      -1.0f, -1.0f,  1.0f,
-      -1.0f,  1.0f,  1.0f,
-      1.0f,  1.0f,  1.0f,
-      1.0f,  1.0f,  1.0f,
-      1.0f, -1.0f,  1.0f,
-      -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
 
-      -1.0f,  1.0f, -1.0f,
-      1.0f,  1.0f, -1.0f,
-      1.0f,  1.0f,  1.0f,
-      1.0f,  1.0f,  1.0f,
-      -1.0f,  1.0f,  1.0f,
-      -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
 
-      -1.0f, -1.0f, -1.0f,
-      -1.0f, -1.0f,  1.0f,
-      1.0f, -1.0f, -1.0f,
-      1.0f, -1.0f, -1.0f,
-      -1.0f, -1.0f,  1.0f,
-      1.0f, -1.0f,  1.0f
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f
     };
 
     // camera paths
     std::chrono::high_resolution_clock::time_point m_pathStartTime;
     float getPathTime();
-    std::optional<CameraPath> m_cameraPath; // camera path, if one is active
+    std::optional<CameraPath> m_cameraPath;
     void updateCameraFromPath(PosRot posRot);
 
+    // --- Shadow mapping ---
+    static constexpr int MAX_SHADOW_CASTERS = 8;
+    static constexpr int DEFAULT_SHADOW_SIZE = 2048;
+
+    enum class ShadowType { None = 0, Directional = 1, Spot = 2, Point = 3 };
+
+    struct ShadowMap {
+        ShadowType type = ShadowType::None;
+        bool enabled = false;
+        GLuint fbo = 0;
+        GLuint depthTex = 0;
+        int size = DEFAULT_SHADOW_SIZE;
+        int lightIndex = -1;
+        glm::mat4 lightSpaceMatrix;
+        GLuint rbo = 0;
+    };
+
+    std::vector<ShadowMap> m_shadowMaps;
+    GLuint m_depthShader = 0;
+    GLuint m_depthPointShader = 0;
+    bool m_enablePCF = true;
+    float m_shadowBias = 0.003f;
+    float m_pointLightFar = 50.0f;
+    bool m_shadowSettingsDirty = false;
 };
