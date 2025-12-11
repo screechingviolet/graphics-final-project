@@ -24,11 +24,11 @@ private:
     glm::mat4* m_projMatrix;
 
     // Crepuscular ray parameters
-    float m_exposure = 0.2f;
+    float m_exposure = 0.1f;
     float m_decay = 0.9f;
-    float m_density = 0.5f;
+    float m_density = 0.4f;
     float m_weight = 0.2f;
-    int m_numSamples = 100;
+    int m_numSamples = 200;
 };
 
 #endif // CREPUSCULAR_H
