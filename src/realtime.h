@@ -7,6 +7,7 @@
 #include "postprocessing/convolution.h"
 #include "postprocessing/fog.h"
 #include "postprocessing/crepuscular.h"
+#include "postprocessing/seasoncolorgrade.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #endif
@@ -45,7 +46,7 @@ public:
     void declGeneralUniforms();
     void declSpecificUniforms(RenderShapeData& shape);
     void declareCameraUniforms();
-    void declareSkyboxUniforms();
+    void declareSkyboxUniforms(int tex1, int tex2, float interp_factor);
     void rebuildMatrices();
     void rebuildCamera();
     void setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& triangles, bool anim = false, bool texturing = false);
@@ -176,10 +177,9 @@ private:
 
     std::vector<GLuint> m_textures;
     std::map<std::string, int> m_texIndexLUT;
-    GLuint m_skybox;
-
+    std::vector<GLuint> m_skybox;
     //postprocessing
-    std::vector<std::unique_ptr<PostProcess>> m_postprocesses;
+    std::vector<std::unique_ptr<SeasonColorgrade>> m_postprocesses;
 
     GLuint m_skybox_vbo_id = 0, m_skybox_vao_id = 0;
     int m_skybox_size = 1;

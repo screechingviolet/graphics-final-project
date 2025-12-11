@@ -4,6 +4,7 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <iostream>
+#include "postprocessing/seasoncolorgrade.h"
 #include "settings.h"
 #include "utils/shaderloader.h"
 #include <glm/gtx/transform.hpp>
@@ -130,7 +131,7 @@ void Realtime::initializeGL() {
     }
 
     // postprocessing pipeline initialization
-    m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    // m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
     //m_postprocesses.push_back(std::make_unique<Fog>(5.0f, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
     m_postprocesses.push_back(std::make_unique<Crepuscular>(
         size().width() * m_devicePixelRatio,         // width
@@ -139,17 +140,48 @@ void Realtime::initializeGL() {
         &m_renderdata,                               // RenderData pointer
         &m_proj                                      // Projection matrix pointer
         ));
+    std::array<std::string, n_LUTs> LUTs = {
+        ":/resources/images/Cold_Ice.png",
+        ":/resources/images/greeny.png",
+        ":/resources/images/sepia.png",
+        ":/resources/images/doom_old.png"
+    };
+    std::array<int, n_LUTs> slices = {16, 16, 16, 16};
+    m_postprocesses.push_back(std::make_unique<SeasonColorgrade>(
+        LUTs,
+        slices,
+        size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio)
+    );
 }
 
 void Realtime::drawSkybox() {
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
+    int tex1, tex2;
+    float interp_factor = 0;
+    if (settings.season < 0.25) {
+        tex1 = 3; tex2 = 0;
+        interp_factor = settings.season/0.25;
+    } else if (settings.season < 0.5) {
+        tex1 = 0; tex2 = 1;
+        interp_factor = (settings.season-0.25)/0.25;
+    } else if (settings.season < 0.75) {
+        tex1 = 1; tex2 = 2;
+        interp_factor = (settings.season-0.5)/0.25;
+    } else if (settings.season < 1.0) {
+        tex1 = 2; tex2 = 3;
+        interp_factor = (settings.season-0.75)/0.25;
+    }
     glUseProgram(m_skybox_shader);
-    declareSkyboxUniforms();
+    declareSkyboxUniforms(tex1, tex2, interp_factor);
 
     glBindVertexArray(m_skybox_vao_id);
-    glActiveTexture(GL_TEXTURE15);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox);
+    // glActiveTexture(GL_TEXTURE0); // deicde based on interpolation
+    // glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox[0]); // bind both textures
+
+    // glActiveTexture(GL_TEXTURE0); // deicde based on interpolation
+    // glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox[0]); // bind both textures
+
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
     // CLEANUP
@@ -327,6 +359,7 @@ void Realtime::paintScene() {
         glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture);
         if (usingTexture) {
             int texIndex = m_texIndexLUT[shape.primitive.material.textureMap.filename];
+            // std::cout << shape.primitive.material.textureMap.filename << std::endl;
             glUniform1i(glGetUniformLocation(m_shader, "txtIndex"), texIndex); // depends on individual mesh
 
             glActiveTexture(GL_TEXTURE20 + texIndex);
@@ -433,6 +466,7 @@ void Realtime::sceneChanged() {
 }
 
 void Realtime::settingsChanged() {
+    if (m_postprocesses.size() > 0) m_postprocesses[0]->setSeason(settings.season);
     makeCurrent();
     if (m_sphereIds->shape_vao != 0 && m_sphereIds->shape_vbo != 0) {
         m_sphere->updateParams(settings.shapeParameter1, settings.shapeParameter2);

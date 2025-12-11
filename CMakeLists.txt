@@ -50,6 +50,7 @@ add_executable(${PROJECT_NAME}
     src/postprocessing/postprocess.h src/postprocessing/postprocess.cpp
     src/postprocessing/colorgrade.h src/postprocessing/colorgrade.cpp
     src/postprocessing/convolution.h src/postprocessing/convolution.cpp
+    src/postprocessing/seasoncolorgrade.h src/postprocessing/seasoncolorgrade.cpp
     src/camerapaths/camerapath.h src/camerapaths/camerapath.cpp
 
     src/utils/miscutilities.h
@@ -108,7 +109,8 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
         resources/shaders/shadow_depth_point.frag
         resources/shaders/crepuscular.frag
         resources/shaders/crepuscular.vert
-	resources/shaders/scrolling.frag
+        resources/shaders/scrolling.frag
+        resources/shaders/seasoncolorgrading.frag
 
         resources/images/test_lut_2.png
         resources/images/test_lut_2_8bit.png
@@ -126,6 +128,9 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
         resources/images/inverted.png
         resources/images/sepia.png
         resources/images/identity.png
+        resources/images/Cold_Ice.png
+        resources/images/park.png
+
 )
 
 # GLEW: this provides support for Windows (including 64-bit)

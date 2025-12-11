@@ -200,7 +200,7 @@ void Realtime::rebuildMeshes() {
     std::unordered_set<std::string> meshfiles;
     for (RenderShapeData& shape: m_renderdata.shapes) {
         if (shape.primitive.type == PrimitiveType::PRIMITIVE_MESH) {
-            std::cout << "Found a mesh" << std::endl;
+            // std::cout << "Found a mesh" << std::endl;
             meshfiles.insert(shape.primitive.meshfile);
         }
     }
@@ -221,7 +221,7 @@ void Realtime::setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& tr
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
 
-    std::cout << texturing << " am texturing\n";
+    // std::cout << texturing << " am texturing\n";
 
     if (anim && texturing) {
         glEnableVertexAttribArray(2);
@@ -234,12 +234,12 @@ void Realtime::setupPrimitives(VboVao* shape_ids, const std::vector<GLfloat>& tr
         glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(GLfloat), reinterpret_cast<void*>(12 * sizeof(GLfloat)));
     } else if (texturing) {
         glEnableVertexAttribArray(2);
-        std::cout << "etnered only texturing place\n";
+        // std::cout << "etnered only texturing place\n";
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), reinterpret_cast<void*>(0));
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), reinterpret_cast<void*>(3 * sizeof(GLfloat)));
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), reinterpret_cast<void*>(6 * sizeof(GLfloat)));
     } else if (anim) {
-        std::cout << "anim\n";
+        // std::cout << "anim\n";
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(GLfloat), reinterpret_cast<void*>(0));
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(GLfloat), reinterpret_cast<void*>(3 * sizeof(GLfloat)));
 
