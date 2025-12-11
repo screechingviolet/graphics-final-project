@@ -29,6 +29,8 @@ uniform sampler2D txt[8];
 uniform sampler2D noiseMap;
 uniform bool usingTexture;
 uniform int txtIndex;
+uniform bool isScrolling;
+uniform float time;
 
 // Shadow uniforms
 uniform int shadowType[8];
@@ -112,8 +114,6 @@ float calcShadowPointPCF(int idx, vec3 fragPos, vec3 lightPos) {
     }
     return visible / 5.0;
 }
-uniform bool isScrolling;
-uniform float time;
 
 void main() {
     fragColor = vec4(0.0);
@@ -179,6 +179,20 @@ void main() {
         constantsdiffuse = inten * f_att * max(dot(norm, surfaceToLight), 0.f);
         if (usingTexture) {
             temp_tex = texture(txt[txtIndex], uv_coord);
+            if (isScrolling) {
+                vec2 uv = uv_coord;
+                vec2 realuv = uv_coord;
+                uv.x += sin(time * 0.1 + uv.y * 1.0) * 0.01;
+                uv.y += cos(time * 0.1 + uv.y * 1.0) * 0.03; // scrolling
+
+                vec4 displacement_tex = texture(noiseMap, 0.2 * uv);
+                realuv.x += displacement_tex[0];
+                realuv.y += displacement_tex[1];
+                temp_tex = texture(txt[txtIndex], realuv);
+
+            } else {
+                temp_tex = texture(txt[txtIndex], uv_coord);
+            }
             fragColor[0] += lightColors[i].r * constantsdiffuse * (blend*(temp_tex[0]) + (1-blend)*(kd * shapeColorD[0]));
             fragColor[1] += lightColors[i].g * constantsdiffuse * (blend*(temp_tex[1]) + (1-blend)*(kd * shapeColorD[1]));
             fragColor[2] += lightColors[i].b * constantsdiffuse * (blend*(temp_tex[2]) + (1-blend)*(kd * shapeColorD[2]));

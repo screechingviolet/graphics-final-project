@@ -364,6 +364,15 @@ void Realtime::paintScene() {
 
             glActiveTexture(GL_TEXTURE20 + texIndex);
             glBindTexture(GL_TEXTURE_2D, m_textures[texIndex]);
+
+            float time = time_elapsed;
+            time_elapsed += 0.02;
+
+            glActiveTexture(GL_TEXTURE20 + 1);
+            glBindTexture(GL_TEXTURE_2D, m_textures[1]);
+            glUniform1f(glGetUniformLocation(m_shader, "time"), time);
+            glUniform1i(glGetUniformLocation(m_shader, "isScrolling"), shape.primitive.material.textureMap.isScrolling);
+            glUniform1i(glGetUniformLocation(m_shader, "noiseMap"), 21);
         }
 
         // GEOMETRY
