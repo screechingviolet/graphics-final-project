@@ -34,7 +34,7 @@ void main()
     vec3 colT1 = texture(tLUT1, vec2((xOffset1 * ST1) + x1, y1)).rgb;
     vec3 colF1 = mix(colB1, colT1, SM1);
 
-#===================SECOND=LUT=============================
+//===================SECOND=LUT=============================
 
     float xOffset2 = 1.0 / slices2;
     float maxSlice2 = slices2 - 1.0;

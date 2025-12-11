@@ -466,7 +466,11 @@ void Realtime::sceneChanged() {
 }
 
 void Realtime::settingsChanged() {
-    if (m_postprocesses.size() > 0) m_postprocesses[0]->setSeason(settings.season);
+    if (!m_postprocesses.empty()) {
+        if (auto* scg = dynamic_cast<SeasonColorgrade*>(m_postprocesses[0].get())) {
+            scg->setSeason(settings.season);
+        }
+    }
     makeCurrent();
     if (m_sphereIds->shape_vao != 0 && m_sphereIds->shape_vbo != 0) {
         m_sphere->updateParams(settings.shapeParameter1, settings.shapeParameter2);
