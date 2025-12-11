@@ -113,6 +113,7 @@ void Realtime::initializeGL() {
 
 
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/anim.vert", ":/resources/shaders/anim.frag");
+    //m_l_system_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
     m_skybox_shader = ShaderLoader::createShaderProgram(":/resources/shaders/skybox.vert", ":/resources/shaders/skybox.frag");
     m_particleShader = ShaderLoader::createShaderProgram(":/resources/shaders/particles.vert", ":/resources/shaders/particles.frag");
 
@@ -129,7 +130,7 @@ void Realtime::initializeGL() {
     }
 
     // postprocessing pipeline initialization
-    //m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
+    m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
     //m_postprocesses.push_back(std::make_unique<Fog>(5.0f, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
     m_postprocesses.push_back(std::make_unique<Crepuscular>(
         size().width() * m_devicePixelRatio,         // width
@@ -169,9 +170,10 @@ void Realtime::updateLSystems() {
     m_LSystemMetaData.shapes.clear();
     glm::mat4 identityMat(1.0f);
     SceneParser::parseRecursive(m_LSystemMetaData, LSystem, identityMat);
+    m_LSystemScaler = 0.25;
 
     for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
-        //m_LSystemMetaData.shapes[i].ctm *= glm::translate(glm::vec3(-4, -1, 4));
+        m_LSystemMetaData.shapes[i].ctm *= glm::translate(glm::vec3(0, 0, 7));
         m_LSystemMetaData.shapes[i].ctm *= glm::scale(m_LSystemScaler * glm::vec3(0.15, 1, 0.15));
     }
 
@@ -179,13 +181,15 @@ void Realtime::updateLSystems() {
 }
 
 void Realtime::paintLSystems() {
+    glUseProgram(m_shader);
     glBindVertexArray(m_vaoLcylinder);
 
     //In case you updated a buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    if (true) {
+    if (updateToggle) {
         updateLSystems();
+        updateToggle = true;
     }
 
     for (int i = 0; i < m_LSystemMetaData.shapes.size(); i++) {
@@ -195,6 +199,9 @@ void Realtime::paintLSystems() {
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, &m_LSystemMetaData.shapes[i].ctm[0][0]);
         GLint shininessLocation = glGetUniformLocation(m_shader, "m_shininess");
         glUniform1f(shininessLocation, m_LSystemMetaData.shapes[i].primitive.material.shininess);
+        //GLint animatingLocation = glGetUniformLocation(m_shader, "animating");
+        //glUniform1i(animatingLocation, 0);
+        glUniform1i(glGetUniformLocation(m_shader, "animating"), 0);
 
         // Shape-specific colours
         GLint cAmbientLocation = glGetUniformLocation(m_shader, "cAmbient");
@@ -212,6 +219,8 @@ void Realtime::paintLSystems() {
         glDrawArrays(GL_TRIANGLES, 0, m_LcylinderData.size() / 6);
 
     }
+
+    glUseProgram(0);
 }
 
 void Realtime::paintParticles() {
@@ -318,21 +327,10 @@ void Realtime::paintScene() {
         glUniform1i(glGetUniformLocation(m_shader, "usingTexture"), usingTexture);
         if (usingTexture) {
             int texIndex = m_texIndexLUT[shape.primitive.material.textureMap.filename];
+            glUniform1i(glGetUniformLocation(m_shader, "txtIndex"), texIndex); // depends on individual mesh
 
-            glUniform1i(glGetUniformLocation(m_shader, "txtIndex"), texIndex);
-            checkGLError("After txtIndex uniform");
-
-            int actualUnit = GL_TEXTURE20 + texIndex;
-            if (actualUnit > GL_TEXTURE31) {  // Most GPUs support 32 texture units (0-31)
-                std::cerr << "ERROR: Texture unit " << actualUnit << " exceeds maximum!" << std::endl;
-                continue;
-            }
-
-            glActiveTexture(actualUnit);
-            checkGLError("After activating texture unit");
-
+            glActiveTexture(GL_TEXTURE20 + texIndex);
             glBindTexture(GL_TEXTURE_2D, m_textures[texIndex]);
-            checkGLError("After binding texture");
         }
 
         // GEOMETRY
@@ -373,18 +371,20 @@ void Realtime::paintGL() {
         return;
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[0]->getFramebuffer());
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[0]->getFramebuffer());
     paintScene();
 
     // Outputs contents of each framebuffer into the next post-process as input
     for (int i = 1; i < m_postprocesses.size(); i++) {
+        // glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
         glBindFramebuffer(GL_FRAMEBUFFER, m_postprocesses[i]->getFramebuffer());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         m_postprocesses[i-1]->paintTexture();
     }
 
     // Draws contents of final post-process
+    // glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

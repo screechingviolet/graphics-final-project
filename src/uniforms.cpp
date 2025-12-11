@@ -169,6 +169,7 @@ void Realtime::initializeTextures(std::string filepath) {
 
     // Task 1: Obtain image from filepath
     filenames.push_back("textures/Texture_1.png");
+    filenames.push_back("textures/turbulentNoise.png");
 
     // Obtain texture images for all shapes
     for (RenderShapeData &shape: m_renderdata.shapes) {
@@ -181,6 +182,10 @@ void Realtime::initializeTextures(std::string filepath) {
                 std::cout << "mana  push back" << std::endl;
             }
         }
+    }
+
+    for (QString &filename: filenames) {
+        std::cout << "FILENLAME:" << filename.toStdString() << std::endl;
     }
 
     for (int i = 0; i < filenames.size(); i++) {
@@ -222,19 +227,29 @@ void Realtime::initializeTextures(std::string filepath) {
     glActiveTexture(GL_TEXTURE15);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox);
 
+    const std::vector<std::string> skyboxes = {"purple_sky", "dawn_sky", "cloudy_sky", "blue_sky"};
+
     std::vector<std::filesystem::path> skyboxpaths = {
-        "textures/Daylight Box_Right.bmp",
-        "textures/Daylight Box_Left.bmp",
-        "textures/Daylight Box_Top.bmp",
-        "textures/Daylight Box_Bottom.bmp",
-        "textures/Daylight Box_Front.bmp",
-        "textures/Daylight Box_Back.bmp"
+          // "textures/Daylight Box_Right.bmp",
+          // "textures/Daylight Box_Left.bmp",
+          // "textures/Daylight Box_Top.bmp",
+          // "textures/Daylight Box_Bottom.bmp",
+          // "textures/Daylight Box_Front.bmp",
+          // "textures/Daylight Box_Back.bmp"
+        "textures/purple_sky/right.png",
+        "textures/purple_sky/left.png",
+        "textures/purple_sky/up.png",
+        "textures/purple_sky/down.png",
+        "textures/purple_sky/front.png",
+        "textures/purple_sky/back.png"
     };
 
     QImage image;
 
     for (int i = 0; i < 6; i++) {
         image = QImage((basepath / skyboxpaths[i]).string().c_str());
+        std::cout << (basepath / skyboxpaths[i]).string() << std::endl;
+        if (image.isNull()) std::cout << "image is null :(" << std::endl;
         image = image.convertToFormat(QImage::Format_RGBA8888); // .mirrored();
         if (image.isNull()) std::cout << "Failed to fetch skybox\n";
         else std::cout << "Fetched skybox\n";

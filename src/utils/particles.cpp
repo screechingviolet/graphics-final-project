@@ -33,7 +33,7 @@ void Realtime::particleUpdate() {
 
             if (p.life > 0.0f) {
                 // Simulate simple physics : gravity only, no collisions
-                //p.velocity += glm::vec3(0.0f, -9.81f, 0.0f) * (float)m_dt * 0.1f;
+                p.velocity += glm::vec3(0.0f, -9.81f, 0.0f) * (float)m_dt * 0.01f;
                 //commented out for debugging
                 p.pos += p.velocity * (float)m_dt * m_particleVelocityGlobal;
                 p.cameraDistance = glm::length(p.pos - glm::vec3(0, 0, 0));
@@ -46,9 +46,9 @@ void Realtime::particleUpdate() {
 
                 m_particulePositionSizeData[4 * m_numParticles + 3] = p.size;
 
-                for (int j = 0; j < 4; j++) {
-                    m_particuleColorData[4 * m_numParticles + j] = p.color[j];
-                }
+                //for (int j = 0; j < 4; j++) {
+                //    m_particuleColorData[4 * m_numParticles + j] = p.color[j];
+                //}
             } else {
                 // Particles that just died will be put at the end of the buffer in SortParticles();
                 p.cameraDistance = -1.0f;

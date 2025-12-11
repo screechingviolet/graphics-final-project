@@ -108,6 +108,7 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
         resources/shaders/shadow_depth_point.frag
         resources/shaders/crepuscular.frag
         resources/shaders/crepuscular.vert
+	resources/shaders/scrolling.frag
 
         resources/images/test_lut_2.png
         resources/images/test_lut_2_8bit.png

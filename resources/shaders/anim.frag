@@ -26,6 +26,7 @@ uniform vec3 shapeColorD;
 uniform vec3 shapeColorS;
 
 uniform sampler2D txt[8];
+uniform sampler2D noiseMap;
 uniform bool usingTexture;
 uniform int txtIndex;
 
@@ -111,6 +112,8 @@ float calcShadowPointPCF(int idx, vec3 fragPos, vec3 lightPos) {
     }
     return visible / 5.0;
 }
+uniform bool isScrolling;
+uniform float time;
 
 void main() {
     fragColor = vec4(0.0);
@@ -176,9 +179,10 @@ void main() {
         constantsdiffuse = inten * f_att * max(dot(norm, surfaceToLight), 0.f);
         if (usingTexture) {
             temp_tex = texture(txt[txtIndex], uv_coord);
-            fragColor[0] += lightColors[i].r * constantsdiffuse * (blend*(temp_tex[0]) + (1-blend)*(kd * shapeColorD[0])) * shadowFactor;
-            fragColor[1] += lightColors[i].g * constantsdiffuse * (blend*(temp_tex[1]) + (1-blend)*(kd * shapeColorD[1])) * shadowFactor;
-            fragColor[2] += lightColors[i].b * constantsdiffuse * (blend*(temp_tex[2]) + (1-blend)*(kd * shapeColorD[2])) * shadowFactor;
+            fragColor[0] += lightColors[i].r * constantsdiffuse * (blend*(temp_tex[0]) + (1-blend)*(kd * shapeColorD[0]));
+            fragColor[1] += lightColors[i].g * constantsdiffuse * (blend*(temp_tex[1]) + (1-blend)*(kd * shapeColorD[1]));
+            fragColor[2] += lightColors[i].b * constantsdiffuse * (blend*(temp_tex[2]) + (1-blend)*(kd * shapeColorD[2]));
+
         } else {
             fragColor[0] += kd * constantsdiffuse * lightColors[i].r * shapeColorD[0] * shadowFactor;
             fragColor[1] += kd * constantsdiffuse * lightColors[i].g * shapeColorD[1] * shadowFactor;
@@ -190,14 +194,21 @@ void main() {
         if (dotprod == 0) constantsspecular = 0.;
         else if (shininess == 0) constantsspecular = inten * f_att * ks * 1;
         else constantsspecular = inten * f_att * ks * pow(max(dotprod, 0.0f), max(0.0, shininess));
+        fragColor[0] += constantsspecular * lightColors[i][0] * shapeColorS[0];
+        fragColor[1] += constantsspecular * lightColors[i][1] * shapeColorS[1];
+        fragColor[2] += constantsspecular * lightColors[i][2] * shapeColorS[2];
 
-        fragColor[0] += constantsspecular * lightColors[i][0] * shapeColorS[0] * shadowFactor;
-        fragColor[1] += constantsspecular * lightColors[i][1] * shapeColorS[1] * shadowFactor;
-        fragColor[2] += constantsspecular * lightColors[i][2] * shapeColorS[2] * shadowFactor;
     }
 
     fragColor.r = min(max(fragColor.r, 0.0), 1.0);
     fragColor.g = min(max(fragColor.g, 0.0), 1.0);
     fragColor.b = min(max(fragColor.b, 0.0), 1.0);
     fragColor.a = 1.0;
+
+    // if (usingTexture) {
+    //     temp_tex = texture(txt[txtIndex], uv_coord);
+    //     fragColor = temp_tex;
+    // }
+
+    //fragColor = vec4(10*uv_coord, 0, 1);
 }
