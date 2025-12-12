@@ -126,9 +126,9 @@ void Realtime::initializeGL() {
     rebuildMeshes();
     sceneChanged();
 
-    if (!m_renderdata.lights.empty()) {
-        // createShadowResources();
-    }
+    // if (!m_renderdata.lights.empty()) {
+    //     createShadowResources();
+    // }
 
     // postprocessing pipeline initialization
     // m_postprocesses.push_back(std::make_unique<Colorgrade>(":/resources/images/greeny.png", 16, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio));
@@ -183,11 +183,6 @@ void Realtime::drawSkybox() {
     // glBindTexture(GL_TEXTURE_CUBE_MAP, m_skybox[0]); // bind both textures
 
     glDrawArrays(GL_TRIANGLES, 0, 36);
-
-    // // CLEANUP
-    // glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    // glBindVertexArray(0);
-    // glActiveTexture(GL_TEXTURE0);  // <-- ADD THIS LINE!
 
     glUseProgram(0);
     glEnable(GL_DEPTH_TEST);
@@ -294,7 +289,7 @@ void Realtime::paintParticles() {
 
 void Realtime::paintScene() {
     // 1. Render shadow maps FIRST
-    //renderShadowMaps();
+    // renderShadowMaps();
 
     // 2. Then render the main scene
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -313,7 +308,7 @@ void Realtime::paintScene() {
     }
 
     // Bind shadow maps to the shader
-    //bindShadowMapsToShader(m_shader);
+    // bindShadowMapsToShader(m_shader);
 
     GLuint vertices;
     int animating;
@@ -601,9 +596,9 @@ void Realtime::settingsChanged() {
 //     return cs;
 // }
 
-// ============================================================================
-// SHADOW RESOURCE MANAGEMENT
-// ============================================================================
+// // ============================================================================
+// // SHADOW RESOURCE MANAGEMENT
+// // ============================================================================
 
 // void Realtime::createShadowResources() {
 //     checkGLError("START of createShadowResources");
@@ -617,7 +612,7 @@ void Realtime::settingsChanged() {
 //     std::cout << "Creating shadow resources for " << count << " lights" << std::endl;
 
 //     for (int i = 0; i < count; ++i) {
-//         std::cout << "Creating shadow map " << i << std::endl;
+//         // std::cout << "Creating shadow map " << i << std::endl;
 //         checkGLError("Start of loop iteration");
 
 //         const SceneLightData &L = m_renderdata.lights[i];
@@ -625,7 +620,7 @@ void Realtime::settingsChanged() {
 //         sm.lightIndex = i;
 
 //         if (L.type == LightType::LIGHT_DIRECTIONAL) {
-//             std::cout << "  Light " << i << " is DIRECTIONAL" << std::endl;
+//             // std::cout << "  Light " << i << " is DIRECTIONAL" << std::endl;
 //             sm.type = ShadowType::Directional;
 //             sm.enabled = true;
 //             sm.size = DEFAULT_SHADOW_SIZE;
@@ -671,50 +666,51 @@ void Realtime::settingsChanged() {
 //             checkGLError("After framebuffer setup");
 
 //         } else if (L.type == LightType::LIGHT_SPOT) {
-//             std::cout << "  Light " << i << " is SPOT" << std::endl;
+//             // std::cout << "  Light " << i << " is SPOT" << std::endl;
 //             // Same checks for spot...
 
 //         } else if (L.type == LightType::LIGHT_POINT) {
-//             std::cout << "  Light " << i << " is POINT" << std::endl;
-//             sm.type = ShadowType::Point;
-//             sm.enabled = true;
+//             // std::cout << "  Light " << i << " is POINT" << std::endl;
+//             // sm.type = ShadowType::Point;
+//             // sm.enabled = true;
 
-//             glGenTextures(1, &sm.depthTex);
-//             checkGLError("After glGenTextures (point)");
+//             // glGenTextures(1, &sm.depthTex);
+//             // checkGLError("After glGenTextures (point)");
 
-//             glBindTexture(GL_TEXTURE_CUBE_MAP, sm.depthTex);
-//             checkGLError("After glBindTexture CUBE_MAP");
+//             // glBindTexture(GL_TEXTURE_CUBE_MAP, sm.depthTex);
+//             // checkGLError("After glBindTexture CUBE_MAP");
 
-//             for (unsigned int face = 0; face < 6; ++face) {
-//                 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_R32F,
-//                              sm.size, sm.size, 0, GL_RED, GL_FLOAT, NULL);
-//                 checkGLError("After glTexImage2D for cube face");
-//             }
+//             // for (unsigned int face = 0; face < 6; ++face) {
+//             //     glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_R32F,
+//             //                  sm.size, sm.size, 0, GL_RED, GL_FLOAT, NULL);
+//             //     checkGLError("After glTexImage2D for cube face");
+//             // }
 
-//             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-//             checkGLError("After cube map texture parameters");
+//             // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//             // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//             // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//             // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//             // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+//             // checkGLError("After cube map texture parameters");
 
-//             glGenFramebuffers(1, &sm.fbo);
-//             checkGLError("After glGenFramebuffers (point)");
+//             // glGenFramebuffers(1, &sm.fbo);
+//             // checkGLError("After glGenFramebuffers (point)");
 
-//             GLuint rboDepth = 0;
-//             glGenRenderbuffers(1, &rboDepth);
-//             checkGLError("After glGenRenderbuffers");
+//             // GLuint rboDepth = 0;
+//             // glGenRenderbuffers(1, &rboDepth);
+//             // checkGLError("After glGenRenderbuffers");
 
-//             glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-//             checkGLError("After glBindRenderbuffer");
+//             // glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+//             // checkGLError("After glBindRenderbuffer");
 
-//             glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, sm.size, sm.size);
-//             checkGLError("After glRenderbufferStorage");
+//             // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, sm.size, sm.size);
+//             // checkGLError("After glRenderbufferStorage");
 
-//             sm.rbo = rboDepth;
-
+//             // sm.rbo = rboDepth;
+//             sm.type = ShadowType::None;
+//             sm.enabled = false;
 //         } else {
-//             std::cout << "  Light " << i << " is NONE/UNKNOWN" << std::endl;
+//             // std::cout << "  Light " << i << " is NONE/UNKNOWN" << std::endl;
 //             sm.type = ShadowType::None;
 //             sm.enabled = false;
 //         }
@@ -724,7 +720,7 @@ void Realtime::settingsChanged() {
 //     }
 
 //     // Load depth shaders
-//     std::cout << "Loading shadow shaders..." << std::endl;
+//     // std::cout << "Loading shadow shaders..." << std::endl;
 //     checkGLError("Before loading depth shader");
 
 //     m_depthShader = ShaderLoader::createShaderProgram(
@@ -773,28 +769,29 @@ void Realtime::settingsChanged() {
 //     }
 // }
 
-// ============================================================================
-// SHADOW MAP RENDERING
-// ============================================================================
+// // ============================================================================
+// // SHADOW MAP RENDERING
+// // ============================================================================
 
 // void Realtime::renderShadowMaps() {
+//     // std::cerr << m_shadowMaps.empty() << ", " << m_depthShader << std::endl;
 //     if (m_shadowMaps.empty()) return;
 //     if (!m_depthShader) return;
 
-//     // checkGLError("START of renderShadowMaps");
+//     checkGLError("START of renderShadowMaps");
 
 //     GLint prevViewport[4];
 //     glGetIntegerv(GL_VIEWPORT, prevViewport);
 
 //     glUseProgram(m_depthShader);
-//     // checkGLError("After glUseProgram(m_depthShader)");
+//     checkGLError("After glUseProgram(m_depthShader)");
 
 //     for (size_t si = 0; si < m_shadowMaps.size(); ++si) {
 //         ShadowMap &sm = m_shadowMaps[si];
 //         if (!sm.enabled || sm.type == ShadowType::None) continue;
 
 //         // std::cout << "Processing shadow map " << si << " type: " << (int)sm.type << std::endl;
-//         // checkGLError("Start of shadow map iteration");
+//         checkGLError("Start of shadow map iteration");
 
 //         const SceneLightData &L = m_renderdata.lights[sm.lightIndex];
 
@@ -805,15 +802,15 @@ void Realtime::settingsChanged() {
 
 //             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 //                                    GL_TEXTURE_2D, sm.depthTex, 0);
-//             // checkGLError("After glFramebufferTexture2D");
+//             checkGLError("After glFramebufferTexture2D");
 
 //             // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 //             glDrawBuffer(GL_NONE);
 //             glReadBuffer(GL_NONE);
-//             // checkGLError("After glDrawBuffer(GL_NONE)");
+//             checkGLError("After glDrawBuffer(GL_NONE)");
 
 //             glViewport(0, 0, sm.size, sm.size);
-//             // checkGLError("After glViewport");
+//             checkGLError("After glViewport");
 
 //             glClear(GL_DEPTH_BUFFER_BIT);
 //             // checkGLError("After glClear");
@@ -948,28 +945,28 @@ void Realtime::settingsChanged() {
 //     glDrawBuffer(GL_BACK);   // or GL_COLOR_ATTACHMENT0 if using FBOs
 //     glReadBuffer(GL_BACK);
 //     glUseProgram(0);
-//     // checkGLError("END of renderShadowMaps");
+//     checkGLError("END of renderShadowMaps");
 
 // }
 
-// ============================================================================
-// BIND SHADOW MAPS TO SHADER
-// ============================================================================
+// // ============================================================================
+// // BIND SHADOW MAPS TO SHADER
+// // ============================================================================
 
 // void Realtime::bindShadowMapsToShader(GLuint shader) {
-//     std::cout << "=== Binding shadow maps to shader " << shader << " ===" << std::endl;
+//     // std::cout << "=== Binding shadow maps to shader " << shader << " ===" << std::endl;
 //     checkGLError("START of bindShadowMapsToShader");
 
 //     int baseUnit = 8;
 //     int count = (int)m_shadowMaps.size();
 
-//     std::cout << "Number of shadow maps: " << count << std::endl;
+//     // std::cout << "Number of shadow maps: " << count << std::endl;
 
 //     // Initialize all shadow types to 0 (no shadow)
 //     for (int i = 0; i < MAX_SHADOW_CASTERS; ++i) {
 //         std::string stName = "shadowType[" + std::to_string(i) + "]";
 //         GLint stLoc = glGetUniformLocation(shader, stName.c_str());
-//         std::cout << "  shadowType[" << i << "] location: " << stLoc << std::endl;
+//         // std::cout << "  shadowType[" << i << "] location: " << stLoc << std::endl;
 //         if (stLoc != -1) {
 //             glUniform1i(stLoc, 0);
 //             checkGLError(("After setting shadowType[" + std::to_string(i) + "]").c_str());
@@ -980,9 +977,9 @@ void Realtime::settingsChanged() {
 //     GLint locEnablePCF = glGetUniformLocation(shader, "enablePCF");
 //     GLint locPointFarPlane = glGetUniformLocation(shader, "pointLightFar");
 
-//     std::cout << "  shadowBias loc: " << locShadowBias << std::endl;
-//     std::cout << "  enablePCF loc: " << locEnablePCF << std::endl;
-//     std::cout << "  pointLightFar loc: " << locPointFarPlane << std::endl;
+//     // std::cout << "  shadowBias loc: " << locShadowBias << std::endl;
+//     // std::cout << "  enablePCF loc: " << locEnablePCF << std::endl;
+//     // std::cout << "  pointLightFar loc: " << locPointFarPlane << std::endl;
 
 //     if (locShadowBias != -1) {
 //         glUniform1f(locShadowBias, m_shadowBias);
@@ -1000,8 +997,8 @@ void Realtime::settingsChanged() {
 //     for (int i = 0; i < count; ++i) {
 //         const ShadowMap &sm = m_shadowMaps[i];
 
-//         std::cout << "Processing shadow map " << i << ":" << std::endl;
-//         std::cout << "  enabled: " << sm.enabled << ", type: " << (int)sm.type << std::endl;
+//         // std::cout << "Processing shadow map " << i << ":" << std::endl;
+//         // std::cout << "  enabled: " << sm.enabled << ", type: " << (int)sm.type << std::endl;
 
 //         int typeInt = 0;
 //         if (!sm.enabled) typeInt = 0;
@@ -1018,7 +1015,7 @@ void Realtime::settingsChanged() {
 
 //         std::string lsName = "lightSpace[" + std::to_string(i) + "]";
 //         GLint lsLoc = glGetUniformLocation(shader, lsName.c_str());
-//         std::cout << "  lightSpace[" << i << "] loc: " << lsLoc << std::endl;
+//         // std::cout << "  lightSpace[" << i << "] loc: " << lsLoc << std::endl;
 //         if (lsLoc != -1) {
 //             glUniformMatrix4fv(lsLoc, 1, GL_FALSE, glm::value_ptr(sm.lightSpaceMatrix));
 //             checkGLError(("After lightSpace[" + std::to_string(i) + "]").c_str());
@@ -1027,7 +1024,7 @@ void Realtime::settingsChanged() {
 //         if (!sm.enabled) continue;
 
 //         if (sm.type == ShadowType::Directional || sm.type == ShadowType::Spot) {
-//             std::cout << "  Binding 2D shadow map to unit " << (baseUnit + i) << std::endl;
+//             // std::cout << "  Binding 2D shadow map to unit " << (baseUnit + i) << std::endl;
 
 //             glActiveTexture(GL_TEXTURE0 + baseUnit + i);
 //             checkGLError(("After glActiveTexture for shadow " + std::to_string(i)).c_str());
@@ -1037,13 +1034,13 @@ void Realtime::settingsChanged() {
 
 //             std::string sampName = "shadowMap[" + std::to_string(i) + "]";
 //             GLint sampLoc = glGetUniformLocation(shader, sampName.c_str());
-//             std::cout << "  shadowMap[" << i << "] loc: " << sampLoc << std::endl;
+//             // std::cout << "  shadowMap[" << i << "] loc: " << sampLoc << std::endl;
 //             if (sampLoc != -1) {
 //                 glUniform1i(sampLoc, baseUnit + i);
 //                 checkGLError(("After shadowMap sampler " + std::to_string(i)).c_str());
 //             }
 //         } else if (sm.type == ShadowType::Point) {
-//             std::cout << "  Binding cubemap shadow to unit " << (baseUnit + i) << std::endl;
+//             // std::cout << "  Binding cubemap shadow to unit " << (baseUnit + i) << std::endl;
 
 //             glActiveTexture(GL_TEXTURE0 + baseUnit + i);
 //             checkGLError(("After glActiveTexture for cubemap " + std::to_string(i)).c_str());
@@ -1053,7 +1050,7 @@ void Realtime::settingsChanged() {
 
 //             std::string sampName = "shadowCube[" + std::to_string(i) + "]";
 //             GLint sampLoc = glGetUniformLocation(shader, sampName.c_str());
-//             std::cout << "  shadowCube[" << i << "] loc: " << sampLoc << std::endl;
+//             // std::cout << "  shadowCube[" << i << "] loc: " << sampLoc << std::endl;
 //             if (sampLoc != -1) {
 //                 glUniform1i(sampLoc, baseUnit + i);
 //                 checkGLError(("After shadowCube sampler " + std::to_string(i)).c_str());
@@ -1064,7 +1061,7 @@ void Realtime::settingsChanged() {
 //     glActiveTexture(GL_TEXTURE0);
 //     checkGLError("After resetting to GL_TEXTURE0");
 
-//     std::cout << "=== END bindShadowMapsToShader ===" << std::endl;
+//     // std::cout << "=== END bindShadowMapsToShader ===" << std::endl;
 // }
 
 // ================== Camera Paths!
